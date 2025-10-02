@@ -446,43 +446,6 @@ ATTACKER_PORT = 5555
 # Use VPN IP addresses
 ```
 
-## 🛡️ Detection & Evasion
-
-### Current Implementation
-
-- Standard library usage (minimal dependencies)
-- Basic obfuscation in feature names
-- Fallback to system commands
-- Resilient reconnection
-
-### Potential Detection Methods
-
-- Network monitoring (unusual connections)
-- Process monitoring (python processes)
-- File integrity monitoring
-- Antivirus signatures
-
-### Evasion Techniques (Educational)
-
-1. **Code obfuscation** - Use PyArmor or similar
-2. **Encryption** - Encrypt communications
-3. **Process injection** - Hide in legitimate processes
-4. **Rootkit techniques** - Hide files/processes
-5. **Traffic tunneling** - Use HTTPS, DNS tunneling
-
-## 📚 Learning Objectives
-
-This project demonstrates:
-
-1. ✅ Reverse shell implementation
-2. ✅ Post-exploitation techniques
-3. ✅ Privilege escalation enumeration
-4. ✅ Data exfiltration methods
-5. ✅ Persistence mechanisms
-6. ✅ Network reconnaissance
-7. ✅ Cross-platform compatibility
-8. ✅ Fallback mechanisms for reliability
-
 ## ⚖️ Ethical Guidelines
 
 **IMPORTANT:** This tool is for **AUTHORIZED TESTING ONLY**
@@ -502,34 +465,3 @@ This project demonstrates:
 ❌ Without written authorization
 
 **Disclaimer:** The authors are not responsible for misuse of this tool. Users must comply with all applicable laws and ethical guidelines.
-
-## 📝 Assignment Completion Checklist
-
-- [x] Keylogger feature implemented
-- [x] Privilege escalation techniques included
-- [x] Screen and audio recording functional
-- [x] Additional features (network discovery, persistence)
-- [x] Clean project structure
-- [x] Comprehensive documentation
-- [x] Cross-platform compatibility
-- [x] Fallback mechanisms for reliability
-- [x] Professional code organization
-
-## 🎓 Credits
-
-- Original Template: Dr. Watthanasak Jeamwatthanachai
-- Course: DES484 Ethical Hacking
-- Institution: SIIT (Sirindhorn International Institute of Technology)
-- Year: 2024
-
-## 📞 Support
-
-For questions or issues related to this assignment:
-
-- Consult course materials
-- Ask instructor or TAs
-- Review code comments and documentation
-
----
-
-**Remember: With great power comes great responsibility. Use ethical hacking skills to protect, not to harm.**
