@@ -1,8 +1,8 @@
-# Enhanced Python Backdoor - DES484 Assignment
+# Python Backdoor - DES484 Assignment
 
 **⚠️ EDUCATIONAL PURPOSE ONLY - ETHICAL HACKING CLASS PROJECT**
 
-This is an enhanced reverse shell backdoor created for the DES484 Ethical Hacking course at SIIT. This project demonstrates advanced post-exploitation techniques and backdoor development concepts.
+This is a reverse shell backdoor created for the DES484 Ethical Hacking course at SIIT. This project demonstrates advanced post-exploitation techniques and backdoor development concepts.
 
 ## 📋 Project Structure
 
