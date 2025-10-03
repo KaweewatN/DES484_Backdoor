@@ -30,6 +30,9 @@ pyaudio>=0.2.13
 # Webcam capture feature
 opencv-python>=4.8.0
 
+# Clipboard monitoring feature
+pyperclip>=1.8.2
+
 # Note: Some features work without these libraries using system commands as fallback
 # Install only what you need:
 #   pip install pynput              # For keylogger

