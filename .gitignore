@@ -29,12 +29,31 @@ ENV/
 .venv
 
 # Logs and captures (sensitive data)
-logs/
-*.log
-*.txt
-screenshots/
-audio/
-webcam/
+# Exclude all captured/logged files but keep directory structure
+logs/keylog/*.txt
+logs/keylog/*.log
+logs/screenshots/*.png
+logs/screenshots/*.jpg
+logs/screenshots/*.jpeg
+logs/audio/*.wav
+logs/audio/*.mp3
+logs/webcam/*.png
+logs/webcam/*.jpg
+logs/webcam/*.jpeg
+logs/recordings/*.avi
+logs/recordings/*.mp4
+
+# Keylog dumps (downloaded from target - on attacker side)
+keylog_dump_*.txt
+
+# Any standalone capture files in root
+screenshot_*.png
+screenshot_*.jpg
+audio_*.wav
+webcam_*.png
+webcam_*.jpg
+recording_*.avi
+recording_*.mp4
 
 # IDE
 .vscode/

@@ -1,0 +1,44 @@
+# Core requirements (essential)
+# No external dependencies required for basic functionality
+
+# Optional requirements for enhanced features
+# Install based on your needs and target system compatibility
+
+# Keylogger feature
+pynput>=1.7.6
+
+# Screen capture features
+Pillow>=10.0.0
+pyautogui>=0.9.54
+
+# Screen recording features
+opencv-python>=4.8.0
+numpy>=1.24.0
+mss>=9.0.0
+imageio>=2.31.0
+imageio-ffmpeg>=0.4.9
+
+# Audio capture feature
+# Note: PyAudio requires system dependencies before installation:
+#   - macOS: brew install portaudio
+#   - Ubuntu/Debian: sudo apt-get install portaudio19-dev python3-pyaudio
+#   - Fedora/CentOS: sudo dnf install portaudio-devel
+#   - Arch Linux: sudo pacman -S portaudio
+# If installation fails, audio recording will use fallback methods
+pyaudio>=0.2.13
+
+# Webcam capture feature
+opencv-python>=4.8.0
+
+# Note: Some features work without these libraries using system commands as fallback
+# Install only what you need:
+#   pip install pynput              # For keylogger
+#   pip install Pillow pyautogui    # For screenshots
+#   pip install pyaudio             # For audio recording (requires system deps)
+#   pip install opencv-python numpy mss imageio imageio-ffmpeg  # For screen recording
+#   pip install opencv-python       # For webcam capture
+
+# For best screen recording experience, also install ffmpeg system-wide:
+#   macOS:   brew install ffmpeg
+#   Ubuntu:  sudo apt-get install ffmpeg
+#   Windows: Download from ffmpeg.org and add to PATH

