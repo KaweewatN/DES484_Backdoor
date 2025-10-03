@@ -23,7 +23,6 @@ DES484_Backdoor/
 │
 ├── utils/                       # Utility modules
 │   ├── __init__.py
-│   ├── check_environment.py    # Environment validation
 │   └── configure.py            # Configuration helpers
 │
 ├── exploitation/                # Exploitation and payload building
@@ -589,19 +588,3 @@ All features are documented in `IMPLEMENTATION_GUIDE.md`.
 
 - Downloaded keylogs: `keylog_dump_YYYYMMDD_HHMMSS.txt`
 - Other downloads: Same directory as `server.py`
-
----
-
-## 📞 Support & Contributions
-
-This is an educational project for DES484 Ethical Hacking course at SIIT.
-
-**For detailed setup and troubleshooting, see:** `IMPLEMENTATION_GUIDE.md`
-
----
-
-**⚠️ REMEMBER: Educational Use Only - Always Get Authorization!**
-
-```
-
-```
