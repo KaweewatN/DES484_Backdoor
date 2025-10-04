@@ -127,7 +127,7 @@ Keylog file ready: logs/keylog/keylog.txt
 **File location:**
 
 - Target: `logs/keylog/keylog.txt`
-- Attacker: `keylog_dump_20251004_143022.txt` (current directory)
+- Attacker: `logs/keylog/keylog_dump_20251004_143022.txt`
 
 ---
 

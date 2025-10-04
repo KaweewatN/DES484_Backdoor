@@ -285,8 +285,6 @@ python3 backdoor.py
 ```bash
 # Get help
 help
-help_advanced
-quick
 
 # System information
 sysinfo
@@ -591,28 +589,26 @@ All features are fully documented with practical examples and step-by-step instr
 
 ### Essential Commands
 
-| Category        | Command                | Description                |
-| --------------- | ---------------------- | -------------------------- |
-| **Help**        | `help`                 | Show basic commands        |
-|                 | `help_advanced`        | Show all advanced features |
-|                 | `quick`                | Quick reference guide      |
-| **System**      | `sysinfo`              | Display system information |
-|                 | `cd <dir>`             | Change directory           |
-| **Files**       | `download <file>`      | Download file from target  |
-|                 | `upload <file>`        | Upload file to target      |
-| **Keylogger**   | `keylog_start`         | Start keystroke capture    |
-|                 | `keylog_dump`          | Download keylog file       |
-|                 | `keylog_stop`          | Stop keylogger             |
-| **Screenshots** | `screenshot`           | Capture single screenshot  |
-|                 | `screenshot_multi 5 2` | Multiple screenshots       |
-| **Recording**   | `record_screen 30 15`  | Record screen (30s, 15fps) |
-|                 | `record_start`         | Start background recording |
-|                 | `record_stop`          | Stop recording             |
-| **Network**     | `net_info`             | Network information        |
-|                 | `net_scan`             | Scan local network         |
-| **Privileges**  | `priv_check`           | Check current privileges   |
-|                 | `priv_enum`            | Find escalation vectors    |
-| **Exit**        | `quit`                 | Close connection           |
+| Category        | Command                | Description                 |
+| --------------- | ---------------------- | --------------------------- |
+| **Help**        | `help`                 | Show all available commands |
+| **System**      | `sysinfo`              | Display system information  |
+|                 | `cd <dir>`             | Change directory            |
+| **Files**       | `download <file>`      | Download file from target   |
+|                 | `upload <file>`        | Upload file to target       |
+| **Keylogger**   | `keylog_start`         | Start keystroke capture     |
+|                 | `keylog_dump`          | Download keylog file        |
+|                 | `keylog_stop`          | Stop keylogger              |
+| **Screenshots** | `screenshot`           | Capture single screenshot   |
+|                 | `screenshot_multi 5 2` | Multiple screenshots        |
+| **Recording**   | `record_screen 30 15`  | Record screen (30s, 15fps)  |
+|                 | `record_start`         | Start background recording  |
+|                 | `record_stop`          | Stop recording              |
+| **Network**     | `net_info`             | Network information         |
+|                 | `net_scan`             | Scan local network          |
+| **Privileges**  | `priv_check`           | Check current privileges    |
+|                 | `priv_enum`            | Find escalation vectors     |
+| **Exit**        | `quit`                 | Close connection            |
 
 ### File Locations
 

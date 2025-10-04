@@ -604,3 +604,14 @@ class WebcamCapture:
             return "Error: opencv-python library required. Install with: pip install opencv-python"
         except Exception as e:
             return f"Error capturing webcam image: {str(e)}"
+    
+    def list_images(self):
+        """List all captured webcam images"""
+        try:
+            files = os.listdir(self.save_dir)
+            images = [f for f in files if f.endswith(('.jpg', '.jpeg', '.png'))]
+            if images:
+                return '\n'.join(images)
+            return "No webcam images found"
+        except Exception as e:
+            return f"Error listing webcam images: {str(e)}"

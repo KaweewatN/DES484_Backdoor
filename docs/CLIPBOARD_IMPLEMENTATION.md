@@ -245,7 +245,7 @@ MySecretPassword123!
 **File location:**
 
 - Target: `logs/clipboard/clipboard_20251004_150230.txt`
-- Attacker: `clipboard_dump_20251004_150530.txt` (current directory)
+- Attacker: `logs/clipboard/clipboard_dump_20251004_150530.txt`
 
 ---
 

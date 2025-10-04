@@ -253,7 +253,7 @@ def print_status():
         "  - net_portscan, net_public_ip, net_check_internet",
         "",
         "BASIC COMMANDS:",
-        "  - cd, download, upload, sysinfo, help_advanced",
+        "  - cd, download, upload, sysinfo, help",
     ]
     
     for feature in features:

