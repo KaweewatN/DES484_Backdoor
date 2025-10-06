@@ -135,7 +135,58 @@ Add Terminal or Python
 
 ### Commands
 
-#### Record Audio
+#### Background Audio Recording (Recommended)
+
+```bash
+audio_start
+```
+
+**What happens:**
+
+- Starts continuous audio recording in background
+- Non-blocking - returns immediately
+- Recording continues until stopped
+- Supports multiple audio input methods (sox, ffmpeg, arecord)
+
+**Response:**
+
+```
+[+] Background audio recording started: logs/audio/audio_20251005_143530.wav
+```
+
+**Check Status:**
+
+```bash
+audio_status
+```
+
+**Response:**
+
+```
+Audio recording in progress: logs/audio/audio_20251005_143530.wav
+```
+
+**Stop Recording:**
+
+```bash
+audio_stop
+```
+
+**Response:**
+
+```
+[+] Audio recording stopped and saved: logs/audio/audio_20251005_143530.wav (15.3 MB)
+```
+
+**Use case:**
+
+- Monitor conversations during meetings
+- Capture extended audio sessions
+- Background surveillance
+
+---
+
+#### Fixed Duration Recording (Legacy)
 
 ```bash
 audio_record <seconds>
@@ -149,21 +200,20 @@ audio_record <seconds>
 
 ```bash
 audio_record 30
-# Records 30 seconds of audio
+# Records 30 seconds of audio (blocks until complete)
 ```
 
 **Response:**
 
 ```
-[+] Recording audio for 30 seconds...
-[+] Audio saved: logs/audio/audio_20251004_143530.wav
+[+] Audio recorded: logs/audio/audio_20251005_143530.wav
 ```
 
 **Use case:**
 
-- Record conversations
-- Capture voice commands
-- Monitor phone calls
+- Quick audio snippets
+- When exact duration is known
+- Legacy compatibility
 
 ---
 
@@ -177,8 +227,8 @@ audio_list
 
 ```
 [+] Audio recordings:
-  - audio_20251004_143530.wav (3.2 MB, 30 seconds)
-  - audio_20251004_141200.wav (1.1 MB, 10 seconds)
+  - audio_20251005_143530.wav (15.3 MB)
+  - audio_20251005_141200.wav (3.2 MB)
 ```
 
 ---
@@ -186,32 +236,50 @@ audio_list
 ### Download Audio
 
 ```bash
-download logs/audio/audio_20251004_143530.wav
+download logs/audio/audio_20251005_143530.wav
 ```
 
 ### Troubleshooting
 
-**Issue: "Audio recording requires pyaudio"**
+**Issue: "Audio recording requires dependencies"**
 
-**macOS:**
+The audio feature supports multiple methods with automatic fallback:
+
+**Method 1: PyAudio (Cross-platform)**
 
 ```bash
+# macOS
 brew install portaudio
 pip3 install pyaudio
-```
 
-**Linux (Ubuntu/Debian):**
-
-```bash
+# Ubuntu/Debian
 sudo apt-get install portaudio19-dev python3-pyaudio
 pip3 install pyaudio
-```
 
-**Linux (Fedora/CentOS):**
-
-```bash
+# Fedora/CentOS
 sudo dnf install portaudio-devel
 pip3 install pyaudio
+```
+
+**Method 2: System Commands (Fallback)**
+
+- macOS: Uses `sox` or `ffmpeg`
+- Linux: Uses `arecord` or `ffmpeg`
+- Windows: Requires `ffmpeg`
+
+```bash
+# Install ffmpeg
+# macOS
+brew install ffmpeg
+
+# Ubuntu/Debian
+sudo apt-get install ffmpeg
+
+# Fedora/CentOS
+sudo dnf install ffmpeg
+
+# macOS (sox alternative)
+brew install sox
 ```
 
 **Issue: "No microphone detected"**
@@ -222,11 +290,17 @@ arecord -l
 
 # macOS - check microphone permissions
 System Preferences > Security & Privacy > Privacy > Microphone
+Add Terminal or Python
+
+# Windows
+Settings > Privacy > Microphone
+Allow apps to access your microphone
 ```
 
 **Issue: Poor audio quality**
 
-- Default: 44100 Hz, 16-bit
+- Default: 44100 Hz, 16-bit stereo (PyAudio)
+- CD quality for system commands
 - WAV format (uncompressed)
 - File size: ~10 MB per minute
 
@@ -234,7 +308,59 @@ System Preferences > Security & Privacy > Privacy > Microphone
 
 ### Commands
 
-#### Capture Webcam
+#### Background Webcam Recording (New)
+
+```bash
+webcam_start
+```
+
+**What happens:**
+
+- Starts continuous webcam video recording in background
+- Non-blocking - returns immediately
+- Recording continues until stopped
+- Supports ffmpeg and OpenCV methods
+- Default resolution: 640x480 at 15fps
+
+**Response:**
+
+```
+[+] Background webcam recording started: logs/webcam/webcam_recording_20251005_144500.mp4
+```
+
+**Check Status:**
+
+```bash
+webcam_status
+```
+
+**Response:**
+
+```
+Webcam recording in progress: logs/webcam/webcam_recording_20251005_144500.mp4
+```
+
+**Stop Recording:**
+
+```bash
+webcam_stop
+```
+
+**Response:**
+
+```
+[+] Webcam recording stopped and saved: logs/webcam/webcam_recording_20251005_144500.mp4 (25.7 MB)
+```
+
+**Use case:**
+
+- Monitor user over extended period
+- Record video evidence
+- Continuous surveillance
+
+---
+
+#### Capture Single Image (Legacy)
 
 ```bash
 webcam_snap
@@ -249,26 +375,43 @@ webcam_snap
 **Response:**
 
 ```
-[+] Webcam image saved: logs/webcam/webcam_20251004_144500.jpg
+[+] Webcam image saved: logs/webcam/webcam_20251005_144500.jpg
 ```
 
 **Use case:**
 
 - Identify target user
-- Capture physical location
-- Photo evidence
+- Quick photo capture
+- Legacy compatibility
 
 ---
 
-### Download Webcam Image
+#### List Webcam Media
 
 ```bash
-download logs/webcam/webcam_20251004_144500.jpg
+webcam_list
+```
+
+**Response:**
+
+```
+[+] Webcam images and videos:
+  - webcam_recording_20251005_144500.mp4 (25.7 MB)
+  - webcam_20251005_144500.jpg (0.8 MB)
+```
+
+---
+
+### Download Webcam Media
+
+```bash
+download logs/webcam/webcam_recording_20251005_144500.mp4
+download logs/webcam/webcam_20251005_144500.jpg
 ```
 
 ### Troubleshooting
 
-**Issue: "Webcam not available"**
+**Issue: "Webcam not available" or "opencv-python library required"**
 
 ```bash
 # Install opencv-python
@@ -297,11 +440,33 @@ System Preferences > Security & Privacy > Privacy > Camera
 Add Terminal or Python
 ```
 
-**Issue: Black image**
+**Windows:**
+
+```
+Settings > Privacy > Camera
+Allow apps to access your camera
+```
+
+**Issue: Black image or "ffmpeg required"**
 
 - Webcam in use by another application
 - Insufficient permissions
 - Webcam cover/blocked
+- For video recording, install ffmpeg:
+
+```bash
+# macOS
+brew install ffmpeg
+
+# Ubuntu/Debian
+sudo apt-get install ffmpeg
+
+# Fedora/CentOS
+sudo dnf install ffmpeg
+
+# Windows
+# Download from https://ffmpeg.org/download.html
+```
 
 ## Screen Recording
 
@@ -341,19 +506,22 @@ record_screen 60 30
 
 ---
 
-#### Background Recording
+#### Background Recording (Recommended)
 
 ```bash
-record_start <max_duration>
+record_start [max_duration]
 ```
 
 **Parameter:**
 
-- `max_duration`: Maximum seconds (default: 3600 = 1 hour)
+- `max_duration`: Maximum seconds (optional, extracted from command if provided, default: 3600 = 1 hour)
 
 **Example:**
 
 ```bash
+record_start
+# Starts background recording with default 1 hour max
+
 record_start 1800
 # Starts background recording, max 30 minutes
 ```
@@ -361,7 +529,7 @@ record_start 1800
 **Response:**
 
 ```
-[+] Background recording started (max 1800 seconds)
+[+] Background recording started: logs/recordings/screen_recording_20251005_150000.mp4
 ```
 
 **Check status:**
@@ -373,12 +541,7 @@ record_status
 **Response:**
 
 ```
-{
-  "recording": true,
-  "duration": 245,
-  "fps": 15,
-  "output_file": "logs/recordings/screen_recording_20251004_150000.mp4"
-}
+Recording in progress: logs/recordings/screen_recording_20251005_150000.mp4
 ```
 
 **Stop recording:**
@@ -390,10 +553,7 @@ record_stop
 **Response:**
 
 ```
-[+] Recording stopped
-[+] Video saved: logs/recordings/screen_recording_20251004_150000.mp4
-[+] Duration: 245 seconds
-[+] File size: 32.5 MB
+[+] Recording stopped and saved: logs/recordings/screen_recording_20251005_150000.mp4 (32.5 MB)
 ```
 
 ---
@@ -408,8 +568,8 @@ record_list
 
 ```
 [+] Screen recordings:
-  - screen_recording_20251004_150000.mp4 (32.5 MB, 245s @ 15fps)
-  - screen_recording_20251004_143000.mp4 (15.2 MB, 120s @ 15fps)
+  - screen_recording_20251005_150000.mp4 (32.5 MB)
+  - screen_recording_20251005_143000.mp4 (15.2 MB)
 ```
 
 ---
@@ -417,7 +577,7 @@ record_list
 ### Download Recording
 
 ```bash
-download logs/recordings/screen_recording_20251004_150000.mp4
+download logs/recordings/screen_recording_20251005_150000.mp4
 ```
 
 ### Troubleshooting
@@ -495,17 +655,23 @@ pip3 install mss imageio imageio-ffmpeg
 
 ### Audio
 
+- Background recording supported (audio_start/stop)
+- Fixed duration recording available (audio_record)
 - Microphone only (no system audio on most platforms)
-- WAV format (large files)
+- WAV format (uncompressed, large files)
 - ~10 MB per minute
-- Real-time only (no buffer)
+- Multiple method support (pyaudio, sox, ffmpeg, arecord)
+- Automatic fallback to available tools
 
 ### Webcam
 
-- Single frame only (no video from webcam_snap)
-- Default camera only
-- Must not be in use
-- Resolution depends on hardware
+- Background video recording supported (webcam_start/stop)
+- Single frame snapshots available (webcam_snap)
+- Default camera only (camera index 0)
+- Must not be in use by other applications
+- Resolution depends on hardware (default 640x480 for video)
+- Video format: MP4
+- Requires opencv-python or ffmpeg
 
 ### Screen Recording
 
@@ -557,11 +723,19 @@ download logs/screenshots/screenshot_TIMESTAMP.png
 ### Audio
 
 ```bash
-# Short recordings for quick info
-audio_record 30
-
-# Download immediately (large files)
+# Background recording (recommended for meetings/conversations)
+audio_start
+# ... wait for desired duration ...
+audio_stop
+audio_list
 download logs/audio/audio_TIMESTAMP.wav
+
+# Short fixed-duration recordings
+audio_record 30
+download logs/audio/audio_TIMESTAMP.wav
+
+# Check status during recording
+audio_status
 ```
 
 ### Screen Recording
@@ -604,12 +778,28 @@ screenshot  # After
 ### Scenario 2: Meeting Recording
 
 ```bash
-# Record video conference
-record_start 3600  # 1 hour max
-audio_record 3600  # Audio in parallel
+# Record video conference with audio and webcam
+record_start 3600  # Screen recording, 1 hour max
+audio_start        # Audio recording in background
+webcam_start       # Webcam recording in background
 
-# Stop both when meeting ends
+# Check status periodically
+record_status
+audio_status
+webcam_status
+
+# Stop all when meeting ends
 record_stop
+audio_stop
+webcam_stop
+
+# Download all media
+record_list
+audio_list
+webcam_list
+download logs/recordings/screen_recording_TIMESTAMP.mp4
+download logs/audio/audio_TIMESTAMP.wav
+download logs/webcam/webcam_recording_TIMESTAMP.mp4
 ```
 
 ### Scenario 3: Activity Monitoring
@@ -622,22 +812,41 @@ screenshot_multi 100 30  # Every 30 sec for 50 min
 screenshot_list
 ```
 
-### Scenario 4: User Identification
+### Scenario 4: User Identification & Monitoring
 
 ```bash
-# Capture webcam for user ID
+# Quick snapshot for user ID
 webcam_snap
 download logs/webcam/webcam_TIMESTAMP.jpg
+
+# Extended monitoring
+webcam_start
+# ... monitor for desired duration ...
+webcam_status
+webcam_stop
+webcam_list
+download logs/webcam/webcam_recording_TIMESTAMP.mp4
 ```
 
 ## Summary
 
 Media capture features:
-✅ Screenshots - Single and batch
-✅ Audio recording - Microphone capture
-✅ Webcam capture - User identification
-✅ Screen recording - Video surveillance
+✅ Screenshots - Single and batch captures
+✅ Audio recording - Background and fixed duration, multiple fallback methods
+✅ Webcam capture - Video recording and single snapshots
+✅ Screen recording - Background and fixed duration with multiple methods
+✅ Status monitoring - Check active recordings in real-time
 ✅ Multiple formats - PNG, WAV, JPG, MP4
 ✅ Timestamped files - Easy organization
+✅ Cross-platform support - macOS, Linux, Windows
+✅ Automatic fallback - Uses available tools (ffmpeg, sox, opencv, etc.)
+
+**Key Features:**
+
+- Background recording for audio, screen, and webcam
+- Non-blocking operations - continue other tasks while recording
+- Status checking for all active recordings
+- Comprehensive error handling and troubleshooting
+- Multiple implementation methods with automatic fallback
 
 **Use responsibly in authorized testing only.**

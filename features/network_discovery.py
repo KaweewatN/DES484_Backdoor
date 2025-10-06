@@ -19,21 +19,36 @@ class NetworkDiscovery:
     """
     
     def __init__(self):
+        """Initialize network discovery module"""
+        # Current operating system
         self.system = platform.system()
+        # System hostname
         self.hostname = socket.gethostname()
+        # Local IP address of target machine
         self.local_ip = None
+        # Get local IP on initialization
         self.get_local_ip()
     
     def get_local_ip(self):
-        """Get the local IP address"""
+        """
+        Get the local IP address of target machine
+        
+        Uses a dummy connection to determine the primary network interface IP.
+        
+        Returns:
+            Local IP address as string
+        """
         try:
             # Create a socket to determine local IP
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            # Connect to public DNS (doesn't actually send data)
             s.connect(("8.8.8.8", 80))
+            # Get the local IP from this socket connection
             self.local_ip = s.getsockname()[0]
             s.close()
             return self.local_ip
         except:
+            # Fallback to localhost if unable to determine
             self.local_ip = "127.0.0.1"
             return self.local_ip
     
@@ -89,10 +104,21 @@ class NetworkDiscovery:
             return "Unable to retrieve active connections"
     
     def scan_port(self, host, port, timeout=1):
-        """Scan a single port on a host"""
+        """
+        Scan a single port on a host
+        
+        Args:
+            host: IP address or hostname to scan
+            port: Port number to check
+            timeout: Connection timeout in seconds
+            
+        Returns:
+            True if port is open, False otherwise
+        """
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(timeout)
+            # Try to connect to port (returns 0 if successful)
             result = sock.connect_ex((host, port))
             sock.close()
             return result == 0
@@ -100,7 +126,18 @@ class NetworkDiscovery:
             return False
     
     def scan_common_ports(self, host):
-        """Scan common ports on a host"""
+        """
+        Scan common ports on a host
+        
+        Checks well-known service ports like HTTP, SSH, RDP, etc.
+        
+        Args:
+            host: IP address or hostname to scan
+            
+        Returns:
+            List of open ports or error message
+        """
+        # Common service ports to scan
         common_ports = [21, 22, 23, 25, 80, 443, 445, 3306, 3389, 5432, 8080, 8443]
         open_ports = []
         

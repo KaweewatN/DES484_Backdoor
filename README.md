@@ -42,7 +42,7 @@ DES484_Backdoor/
 │   └── payloads/               # Payload templates
 │       └── README.md
 │
-└── logs/                        # Logs directory (auto-created)
+└── logs/                       # Logs directory (auto-created)
     ├── keylog/                 # Keystroke logs
     │   └── README.md
     ├── clipboard/              # Clipboard logs
@@ -87,8 +87,17 @@ Attacker_Machine/
 - Discover writable system paths
 - List running services
 - Check scheduled tasks
-- Find sensitive files
-- Commands: `priv_check`, `priv_enum`, `priv_services`, `priv_tasks`, `priv_sensitive`
+- Find sensitive files (credentials, SSH keys, configs)
+- Find weak file permissions
+- Windows UAC bypass attempts
+- DLL hijacking opportunities (Windows)
+- Docker-based privilege escalation
+- Create persistence mechanisms
+- Create backdoor user accounts
+- Plant SSH keys for persistent access
+- Sudo exploitation with password
+- Comprehensive escalation scanning
+- Commands: `priv_check`, `priv_enum`, `priv_scan`, `priv_services`, `priv_tasks`, `priv_sensitive`, `priv_weak_perms`, `priv_uac_bypass`, `priv_dll_hijack`, `priv_docker`, `priv_persist`, `priv_user`, `priv_ssh_key`, `priv_sudo`
 
 ### 3. **Screen & Media Capture** 📸
 
@@ -334,6 +343,9 @@ priv_check
 # Enumerate escalation vectors
 priv_enum
 
+# Comprehensive escalation scan (all techniques)
+priv_scan
+
 # List services (potential vulnerabilities)
 priv_services
 
@@ -342,6 +354,30 @@ priv_tasks
 
 # Search for sensitive files
 priv_sensitive
+
+# Find weak file permissions
+priv_weak_perms
+
+# Windows UAC bypass (Windows only)
+priv_uac_bypass
+
+# Find DLL hijacking opportunities (Windows only)
+priv_dll_hijack
+
+# Docker-based escalation
+priv_docker
+
+# Create persistence mechanism
+priv_persist
+
+# Create backdoor user (requires admin/root)
+priv_user hacker SecurePass123
+
+# Plant SSH key for persistent access
+priv_ssh_key "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAA..."
+
+# Attempt sudo escalation with password
+priv_sudo UserPassword123
 ```
 
 #### Screen Capture
@@ -589,26 +625,32 @@ All features are fully documented with practical examples and step-by-step instr
 
 ### Essential Commands
 
-| Category        | Command                | Description                 |
-| --------------- | ---------------------- | --------------------------- |
-| **Help**        | `help`                 | Show all available commands |
-| **System**      | `sysinfo`              | Display system information  |
-|                 | `cd <dir>`             | Change directory            |
-| **Files**       | `download <file>`      | Download file from target   |
-|                 | `upload <file>`        | Upload file to target       |
-| **Keylogger**   | `keylog_start`         | Start keystroke capture     |
-|                 | `keylog_dump`          | Download keylog file        |
-|                 | `keylog_stop`          | Stop keylogger              |
-| **Screenshots** | `screenshot`           | Capture single screenshot   |
-|                 | `screenshot_multi 5 2` | Multiple screenshots        |
-| **Recording**   | `record_screen 30 15`  | Record screen (30s, 15fps)  |
-|                 | `record_start`         | Start background recording  |
-|                 | `record_stop`          | Stop recording              |
-| **Network**     | `net_info`             | Network information         |
-|                 | `net_scan`             | Scan local network          |
-| **Privileges**  | `priv_check`           | Check current privileges    |
-|                 | `priv_enum`            | Find escalation vectors     |
-| **Exit**        | `quit`                 | Close connection            |
+| Category        | Command                | Description                  |
+| --------------- | ---------------------- | ---------------------------- |
+| **Help**        | `help`                 | Show all available commands  |
+| **System**      | `sysinfo`              | Display system information   |
+|                 | `cd <dir>`             | Change directory             |
+| **Files**       | `download <file>`      | Download file from target    |
+|                 | `upload <file>`        | Upload file to target        |
+| **Keylogger**   | `keylog_start`         | Start keystroke capture      |
+|                 | `keylog_dump`          | Download keylog file         |
+|                 | `keylog_stop`          | Stop keylogger               |
+| **Screenshots** | `screenshot`           | Capture single screenshot    |
+|                 | `screenshot_multi 5 2` | Multiple screenshots         |
+| **Recording**   | `record_screen 30 15`  | Record screen (30s, 15fps)   |
+|                 | `record_start`         | Start background recording   |
+|                 | `record_stop`          | Stop recording               |
+| **Network**     | `net_info`             | Network information          |
+|                 | `net_scan`             | Scan local network           |
+| **Privileges**  | `priv_check`           | Check current privileges     |
+|                 | `priv_enum`            | Find escalation vectors      |
+|                 | `priv_scan`            | Comprehensive scan           |
+|                 | `priv_weak_perms`      | Find exploitable permissions |
+|                 | `priv_uac_bypass`      | UAC bypass (Windows)         |
+|                 | `priv_docker`          | Docker escalation            |
+|                 | `priv_persist`         | Create persistence           |
+|                 | `priv_user admin Pass` | Create backdoor user         |
+| **Exit**        | `quit`                 | Close connection             |
 
 ### File Locations
 

