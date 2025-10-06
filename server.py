@@ -461,7 +461,7 @@ def main():
     
     # Configuration - these must match the settings in backdoor.py on target
     HOST = '0.0.0.0'  # Listen on all interfaces (0.0.0.0)
-    PORT = 5557     # Port to listen on (must match ATTACKER_PORT in backdoor.py)
+    PORT = 5558     # Port to listen on (must match ATTACKER_PORT in backdoor.py)
     
     # Allow command-line arguments for port
     if len(sys.argv) > 1:

