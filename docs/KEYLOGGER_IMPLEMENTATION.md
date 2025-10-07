@@ -222,6 +222,38 @@ keylog_manual user typed: admin password123
 - For testing purposes
 - Simulating keystrokes
 
+---
+
+### Manual Logging (Fallback Mode)
+
+```bash
+keylog_manual <text>
+```
+
+**What happens:**
+
+- Manually logs text to keylog file
+- Used when pynput is not available
+- Adds timestamp automatically
+
+**Example:**
+
+```bash
+keylog_manual user typed: admin password123
+```
+
+**Response:**
+
+```
+[+] Manually logged: user typed: admin password123
+```
+
+**Use case:**
+
+- When pynput cannot be installed
+- For testing purposes
+- Simulating keystrokes
+
 ## Log File Format
 
 ### Structure
